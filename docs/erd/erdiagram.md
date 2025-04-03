@@ -29,7 +29,6 @@ PRODUCT {
     string name
     string category
     string brand
-    int price
 }
 
 PRODUCT_STAT {
