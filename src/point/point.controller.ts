@@ -9,8 +9,10 @@ import {
 import { PointHistory, TransactionType, UserPoint } from './point.model';
 import { UserPointTable } from '../database/userpoint.table';
 import { PointHistoryTable } from '../database/pointhistory.table';
-import { PointBody as PointDto } from './point.dto';
+import { PointBody, PointResDto } from './point.dto';
 import { PointService } from './point.service';
+import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { GetUserParamDto } from 'src/user/user.dto';
 
 @Controller('/point')
 export class PointController {
@@ -23,31 +25,30 @@ export class PointController {
   /**
    * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
    */
-  @Get(':id')
-  async point(@Param('id') id): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
-    return await this.pointService.getPointByUser(userId);
+  @Get(':userId')
+  @ApiOperation({ summary: '유저의 포인트 조회' })
+  @ApiParam({ name: 'userId', type: 'number' })
+  async point(@Param() params: GetUserParamDto): Promise<PointResDto> {
+    return { point: 1000 };
+    return await this.pointService.getPointByUser(params.userId);
   }
 
   /**
    * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
    */
-  @Get(':id/histories')
-  async history(@Param('id') id): Promise<PointHistory[]> {
-    const userId = Number.parseInt(id);
-    return await this.pointService.getPointHistoryByUser(userId);
+  @Get(':userId/histories')
+  async history(@Param() params: GetUserParamDto): Promise<PointHistory[]> {
+    return await this.pointService.getPointHistoryByUser(params.userId);
   }
 
   /**
    * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
    */
-  @Patch(':id/charge')
-  async charge(
-    @Param('id') id,
-    @Body(ValidationPipe) pointDto: PointDto,
-  ): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
-    const amount = pointDto.amount;
+  @Patch('charge')
+  @ApiOperation({ summary: '유저의 포인트 충전' })
+  async charge(@Body() pointDto: PointBody): Promise<UserPoint> {
+    const { userId, amount } = pointDto;
+    return;
     return await this.pointService.chargePoint(userId, amount);
   }
 
@@ -57,7 +58,7 @@ export class PointController {
   @Patch(':id/use')
   async use(
     @Param('id') id,
-    @Body(ValidationPipe) pointDto: PointDto,
+    @Body(ValidationPipe) pointDto: PointBody,
   ): Promise<UserPoint> {
     const userId = Number.parseInt(id);
     const amount = pointDto.amount;

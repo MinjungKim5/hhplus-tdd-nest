@@ -1,6 +1,17 @@
-import { IsInt } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsPositive } from 'class-validator';
 
 export class PointBody {
-    @IsInt()
-    amount: number
+  @ApiProperty()
+  @IsPositive()
+  userId: number;
+  @ApiProperty()
+  @IsPositive()
+  amount: number;
+}
+
+export class PointResDto {
+  @ApiProperty()
+  @IsPositive()
+  point: number;
 }
