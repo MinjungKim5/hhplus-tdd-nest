@@ -1,9 +1,9 @@
-import { PointHistoryCriteria } from '../application/point.criteria';
+import { PointHistoryCriteria } from '../application/point.application.dto';
 import { PointHistory, UserPoint } from './point';
 
-export interface PointRepository {
+export interface IPointRepository {
   getPointByUser(userId: number): Promise<number>;
   getPointHistory(userId: number): Promise<PointHistory[]>;
-  updatePoint(userId: number, balanceAfterCharge: number): Promise<UserPoint>;
+  updatePointBalance(userId: number, balance: number): Promise<UserPoint>;
   createPointHistory(criteria: PointHistoryCriteria): Promise<boolean>;
 }

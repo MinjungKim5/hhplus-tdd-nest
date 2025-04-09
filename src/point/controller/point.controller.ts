@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { PointHistory, UserPoint } from '../domain/point';
-import { ChargePointReqDto, PointResDto } from './point.dto';
+import {
+  ChargePointReqDto,
+  PointHistoryResDto,
+  PointResDto,
+} from './point.dto';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { GetUserParamDto } from '../../user/controller/user.dto';
 import { PointService } from '../application/point.service';
-
 @Controller('/point')
 export class PointController {
   constructor(private readonly pointService: PointService) {}
@@ -18,13 +21,15 @@ export class PointController {
   }
 
   @Get(':userId/histories')
-  async history(@Param() params: GetUserParamDto): Promise<PointHistory[]> {
+  async history(
+    @Param() params: GetUserParamDto,
+  ): Promise<PointHistoryResDto[]> {
     return await this.pointService.getPointHistoryByUser(params.userId);
   }
 
   @Patch('charge')
   @ApiOperation({ summary: '유저의 포인트 충전' })
-  async charge(@Body() pointDto: ChargePointReqDto): Promise<UserPoint> {
+  async charge(@Body() pointDto: ChargePointReqDto): Promise<PointResDto> {
     const { userId, amount } = pointDto;
     return await this.pointService.chargePoint(userId, amount);
   }

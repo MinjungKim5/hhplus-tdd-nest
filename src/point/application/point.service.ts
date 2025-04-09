@@ -1,19 +1,28 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PointHistory, TransactionType, UserPoint } from '../domain/point';
-import { PointRepository } from '../domain/point.repository';
-import { PointResDto } from '../controller/point.dto';
-
+import { IPointRepository } from '../domain/point.repository';
+import { PointRepositoryToken } from '../infrastructure/point.repository.impl';
+import { PointHistoryResponse } from './point.application.dto';
+@Injectable()
 export class PointService {
   constructor(
-    @Inject()
-    private readonly pointRepository: PointRepository,
+    @Inject(PointRepositoryToken)
+    private readonly pointRepository: IPointRepository,
   ) {}
   async getPointByUser(userId: number): Promise<number> {
     return await this.pointRepository.getPointByUser(userId);
   }
 
-  async getPointHistoryByUser(userId: number): Promise<PointHistory[]> {
-    return await this.pointRepository.getPointHistory(userId);
+  async getPointHistoryByUser(userId: number): Promise<PointHistoryResponse[]> {
+    const pointHistory = await this.pointRepository.getPointHistory(userId);
+    return pointHistory.map((history) => {
+      return {
+        id: history.id,
+        amount: history.amount,
+        type: history.type,
+        createdAt: history.createdAt,
+      };
+    });
   }
 
   async chargePoint(userId: number, amount: number): Promise<UserPoint> {
@@ -22,7 +31,7 @@ export class PointService {
     const balanceAfterCharge = currentPoint + amount;
     // 포인트 잔액에 대한 예외처리
     this.balanceExceptionCheck(balanceAfterCharge);
-    const result = await this.pointRepository.updatePoint(
+    const result = await this.pointRepository.updatePointBalance(
       userId,
       balanceAfterCharge,
     );
@@ -33,7 +42,7 @@ export class PointService {
       type: TransactionType.CHARGE,
     });
     // point lock 반환
-    return result;
+    return { point: result.point };
   }
 
   async usePoint(userId: number, amount: number): Promise<UserPoint> {
@@ -42,7 +51,7 @@ export class PointService {
     const balanceAfterUse = currentPoint - amount;
     // 포인트 잔액에 대한 예외처리
     this.balanceExceptionCheck(balanceAfterUse);
-    const result = await this.pointRepository.updatePoint(
+    const result = await this.pointRepository.updatePointBalance(
       userId,
       balanceAfterUse,
     );
@@ -53,7 +62,7 @@ export class PointService {
       type: TransactionType.USE,
     });
     // point lock 반환
-    return result;
+    return { point: result.point };
   }
 
   balanceExceptionCheck(balance: number) {

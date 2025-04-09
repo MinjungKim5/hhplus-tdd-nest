@@ -13,8 +13,7 @@ export class SortDto {
   @IsIn(['best-selling'])
   sort?: string;
 }
-
-export class ProductDto {
+export class ProductResDto {
   @ApiProperty()
   @IsPositive()
   productId: number = 1;
@@ -26,7 +25,7 @@ export class ProductDto {
   brand: string = 'GIGABYTE';
 }
 
-export class ProductOptionDto extends ProductDto {
+export class ProductOptionResDto extends ProductResDto {
   @ApiProperty()
   @IsPositive()
   optionId: number = 3;

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
-import { MakeOrderReqDto, OrderDto, PurchaseReqDto } from './order.dto';
+import { MakeOrderReqDto, OrderDto } from './order.dto';
 import { GetUserParamDto } from '../../user/controller/user.dto';
 
 @Controller('/order')

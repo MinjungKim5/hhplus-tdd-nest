@@ -1,5 +1,4 @@
 export class UserPoint {
-  id: number;
   point: number;
 }
 
@@ -18,5 +17,5 @@ export class PointHistory {
   userId: number;
   type: TransactionType;
   amount: number;
-  createdAt: number;
+  createdAt: Date;
 }
