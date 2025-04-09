@@ -1,18 +1,25 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { GetPurchaseParamDto, PurchaseReqDto } from './purchase.dto';
+import { PurchaseFacade } from '../application/purchase.facade';
+import { PurchaseService } from '../domain/purchase.service';
+import { GetUserParamDto } from 'src/user/controller/user.dto';
 
 @Controller('/purchase')
 export class PurchaseController {
-  constructor() {}
+  constructor(
+    private readonly purchaseFacade: PurchaseFacade,
+    private readonly purchaseService: PurchaseService,
+  ) {}
   @Post()
   @ApiOperation({ summary: '결제요청' })
-  purchaseOrder(@Body() dto: PurchaseReqDto) {}
+  purchaseOrder(@Body() dto: PurchaseReqDto) {
+    return this.purchaseFacade.purchaseOrder(dto);
+  }
 
-  @Get(':purchaseId')
-  @ApiOperation({ summary: '결제내역 상세' })
-  @ApiParam({ name: 'purchaseId', type: 'number' })
-  getPurchaseDetail(@Param() params: GetPurchaseParamDto) {
-    this.PurchaseService.getPurchaseDetail(params.purchaseId);
+  @Get()
+  @ApiOperation({ summary: '구매내역 조회' })
+  getPurchaseHistory(@Query('userId') userId: number) {
+    return this.purchaseService.getPurchaseHistory(userId);
   }
 }

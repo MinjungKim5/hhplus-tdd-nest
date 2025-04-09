@@ -27,4 +27,12 @@ export class ProductRepository implements IProductRepository {
   getOptionStock(optionId: number): Promise<number> {
     return Promise.resolve(0);
   }
+
+  updateOptionStock(optionId: number, stock: number): Promise<void> {
+    return Promise.resolve();
+  }
+
+  addProductSales(productId: number, quantity: number): Promise<void> {
+    return Promise.resolve();
+  }
 }

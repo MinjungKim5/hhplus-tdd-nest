@@ -28,4 +28,12 @@ export class ProductService {
   getOptionStock(optionId: number): Promise<number> {
     return this.productRepository.getOptionStock(optionId);
   }
+
+  updateOptionStock(optionId: number, stock: number): Promise<void> {
+    return this.productRepository.updateOptionStock(optionId, stock);
+  }
+
+  addProductSales(productId: number, quantity: number): Promise<void> {
+    return this.productRepository.addProductSales(productId, quantity);
+  }
 }

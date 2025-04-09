@@ -8,7 +8,6 @@ import {
 } from './infrastructure/point.repository.impl';
 
 @Module({
-  imports: [DatabaseModule],
   controllers: [PointController],
   providers: [
     PointService,
