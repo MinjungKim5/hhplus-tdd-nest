@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PointService } from './point.service';
 import { UserPointTable } from '../database/userpoint.table';
 import { PointHistoryTable } from '../database/pointhistory.table';
-import { TransactionType } from './point.model';
+import { TransactionType } from './domain/point';
 
 describe('PointService', () => {
   let service: PointService;
