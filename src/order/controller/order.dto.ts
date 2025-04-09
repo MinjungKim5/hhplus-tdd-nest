@@ -41,6 +41,9 @@ export class OrderDto {
   @ApiProperty()
   optionName: string = 'ROG';
   @ApiProperty()
+  @IsPositive()
+  quantity: number = 1;
+  @ApiProperty()
   address: string = '광화문';
   @ApiProperty()
   @IsPositive()
@@ -48,21 +51,7 @@ export class OrderDto {
   @ApiProperty()
   status: string = '주문성공';
   @ApiProperty()
-  @IsPositive()
-  couponIssueId?: number;
+  createdAt: Date = new Date();
   @ApiProperty()
-  @IsPositive()
-  finalPrice?: number;
-}
-
-export class PurchaseReqDto {
-  @ApiProperty()
-  @IsPositive()
-  userId: number = 1;
-  @ApiProperty()
-  @IsPositive()
-  orderId: number = 1;
-  @ApiProperty()
-  @IsPositive()
-  couponIssueId: number = 1;
+  updatedAt: Date = new Date();
 }
