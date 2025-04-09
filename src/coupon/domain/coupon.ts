@@ -7,9 +7,9 @@ export class Coupon {
   dueDate: Date;
 }
 
-export class CouponIssue {
+export class CouponIssue extends Coupon {
   couponIssueId: number;
   userId: number;
-  couponId: number;
   createdAt: Date;
+  used: boolean;
 }

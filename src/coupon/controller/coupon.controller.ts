@@ -2,15 +2,18 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ClaimCouponResDto, CouponDto, CouponIssueDto } from './coupon.dto';
 import { GetUserParamDto } from '../../user/controller/user.dto';
+import { CouponService } from '../application/coupon.service';
 
 @Controller('/coupon')
 export class CouponController {
-  constructor() {}
+  constructor(
+    private readonly couponService: CouponService,
+  ) {}
 
   @Get('')
   @ApiOperation({ summary: '발급가능한 쿠폰 목록 조회' })
   async getCoupons(): Promise<CouponDto[]> {
-    return [new CouponDto()];
+    return this.couponService.getCouponList();
   }
 
   @Get(':userId')
@@ -19,12 +22,12 @@ export class CouponController {
   async getCouponIssuesByUser(
     @Param() params: GetUserParamDto,
   ): Promise<CouponIssueDto[]> {
-    return [new CouponIssueDto()];
+    return this.couponService.getCouponIssuesByUserId(params.userId);
   }
 
   @Post('/claim')
   @ApiOperation({ summary: '쿠폰 발급 요청' })
   async claimCoupon(@Body() dto: ClaimCouponResDto) {
-    return;
+    return this.couponService.claimCoupon(dto.couponId, dto.userId);
   }
 }
