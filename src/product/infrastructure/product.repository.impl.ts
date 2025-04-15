@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { IProductRepository } from '../domain/product.repository';
 import { Product, ProductOption } from '../domain/product';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 export const ProductRepositoryToken = 'ProductRepositoryToken';
 
 @Injectable()
 export class ProductRepository implements IProductRepository {
-  constructor() {}
+  constructor(private readonly prisma: PrismaService) {}
 
   getProducts(): Promise<Product[]> {
     return Promise.resolve([]);

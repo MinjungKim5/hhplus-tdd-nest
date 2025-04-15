@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  // relationMode = "prisma"
+}
+
+model User {
+  userId       Int             @id @default(autoincrement())
+  name         String
+  email        String          @unique
+  point        Int             @default(0)
+  pointHistory PointHistory[]
+  couponIssues CouponIssue[]
+  orders       Order[]
+}
+
+model PointHistory {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  point     Int
+  createdAt DateTime @default(now())
+  userId Int
+  user   User @relation(fields: [userId], references: [userId])
+}
+
+model Product {
+  productId     Int             @id @default(autoincrement())
+  name          String
+  category      String
+  brand         String
+
+  productOptions ProductOption[]
+}
+
+model ProductStat {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  sales     Int
+
+  productId Int
+}
+
+model ProductOption {
+  optionId  Int     @id @default(autoincrement())
+  name      String
+  stock     Int
+  price     Int
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [productId])
+
+  orders    Order[]
+}
+
+model Coupon {
+  couponId     Int           @id @default(autoincrement())
+  type         String
+  benefit      Int
+  maxDiscount  Int
+  minPrice     Int
+
+  couponIssues CouponIssue[]
+}
+
+model CouponIssue {
+  couponIssueId Int      @id @default(autoincrement())
+  used          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  couponId Int
+  userId   Int
+
+  coupon Coupon @relation(fields: [couponId], references: [couponId])
+  user   User   @relation(fields: [userId], references: [userId])
+  orders Order[]
+}
+
+model Order {
+  orderId      Int      @id @default(autoincrement())
+  quantity     Int
+  originalPrice Int
+  finalPrice   Int
+  address      String
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId         Int
+  optionId       Int
+  couponIssueId  Int?
+
+  user           User           @relation(fields: [userId], references: [userId])
+  option         ProductOption  @relation(fields: [optionId], references: [optionId])
+  couponIssue    CouponIssue?   @relation(fields: [couponIssueId], references: [couponIssueId])
+}

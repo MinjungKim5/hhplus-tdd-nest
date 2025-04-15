@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './prisma/prisma.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PointModule } from './point/point.module';
@@ -7,7 +9,14 @@ import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
 
 @Module({
-  imports: [PointModule, CouponModule, OrderModule, ProductModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    PointModule,
+    CouponModule,
+    OrderModule,
+    ProductModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

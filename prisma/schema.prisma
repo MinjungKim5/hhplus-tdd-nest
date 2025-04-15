@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model User {
+  userId       Int             @id @default(autoincrement())
+  name         String
+  email        String          @unique
+  point        Int             @default(0)
+}
+
+model PointHistory {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  point     Int
+  createdAt DateTime @default(now())
+  userId Int
+}
+
+model Product {
+  productId     Int             @id @default(autoincrement())
+  name          String
+  category      String
+  brand         String
+}
+
+model ProductStat {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  sales     Int
+
+  productId Int
+}
+
+model ProductOption {
+  optionId  Int     @id @default(autoincrement())
+  name      String
+  stock     Int
+  price     Int
+
+  productId Int
+}
+
+model Coupon {
+  couponId     Int           @id @default(autoincrement())
+  type         String
+  benefit      Int
+  maxDiscount  Int
+  minPrice     Int
+}
+
+model CouponIssue {
+  couponIssueId Int      @id @default(autoincrement())
+  used          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  couponId Int
+  userId   Int
+}
+
+model Order {
+  orderId      Int      @id @default(autoincrement())
+  quantity     Int
+  originalPrice Int
+  finalPrice   Int
+  address      String
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId         Int
+  optionId       Int
+  couponIssueId  Int?
+}

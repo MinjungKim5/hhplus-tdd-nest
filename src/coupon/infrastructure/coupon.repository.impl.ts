@@ -1,12 +1,15 @@
-import { Inject } from "@nestjs/common";
-import { ICouponRepository } from "../domain/coupon.repository";
-import { Coupon, CouponIssue } from "../domain/coupon";
+import { Inject } from '@nestjs/common';
+import { ICouponRepository } from '../domain/coupon.repository';
+import { Coupon, CouponIssue } from '../domain/coupon';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 export const CouponRepositoryToken = Symbol('CouponRepository');
 
 export class CouponRepository implements ICouponRepository {
   constructor(
-    @Inject(CouponRepositoryToken) private readonly couponRepository: ICouponRepository,
+    @Inject(CouponRepositoryToken)
+    private readonly couponRepository: ICouponRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   getCouponList(): Promise<Coupon[]> {
@@ -26,6 +29,6 @@ export class CouponRepository implements ICouponRepository {
   }
 
   updateCouponIssueUsed(couponIssueId: number): Promise<void> {
-    return
+    return;
   }
 }
