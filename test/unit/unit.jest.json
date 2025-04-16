@@ -1,13 +1,11 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": "../..",
+  "rootDir": "../../",
   "testEnvironment": "node",
-  "testRegex": ".it.spec.ts$",
+  "testRegex": "unit.spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "globalSetup": "<rootDir>/test/setup.ts",
-  "globalTeardown": "<rootDir>/test/down.ts",
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/src/$1"
   }

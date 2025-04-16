@@ -74,6 +74,7 @@ export const getPrismaClient = () => {
 
 export const cleanupDatabase = async () => {
   const prisma = getPrismaClient();
+
   const tables = await prisma.$queryRaw<
     Array<{ TABLE_NAME: string }>
   >`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()`;
@@ -81,7 +82,8 @@ export const cleanupDatabase = async () => {
   for (const { TABLE_NAME } of tables) {
     if (TABLE_NAME !== '_prisma_migrations') {
       try {
-        await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${TABLE_NAME}\`;`);
+        // DELETE를 사용하여 데이터를 삭제
+        await prisma.$executeRawUnsafe(`DELETE FROM \`${TABLE_NAME}\`;`);
       } catch (error) {
         console.log({ error });
       }
