@@ -39,7 +39,7 @@ export class PointService {
     await this.pointRepository.createPointHistory({
       userId,
       amount,
-      type: TransactionType.CHARGE,
+      type: 'charge',
     });
     // point lock 반환
     return { point: result.point };
@@ -59,7 +59,7 @@ export class PointService {
     await this.pointRepository.createPointHistory({
       userId,
       amount,
-      type: TransactionType.USE,
+      type: 'use',
     });
     // point lock 반환
     return { point: result.point };

@@ -62,6 +62,12 @@ COUPON_ISSUE {
     date updatedAt
 }
 
+COUPON_LIMIT {
+    int couponId
+    int limit
+    int issued
+}
+
 ORDER {
     int orderId
     int userId

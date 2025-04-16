@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-  relationMode = "prisma"
+  // relationMode = "prisma"
 }
 
 model User {
@@ -14,12 +14,13 @@ model User {
   name         String
   email        String          @unique
   point        Int             @default(0)
+  couponIssues CouponIssue[]
 }
 
 model PointHistory {
   id        Int      @id @default(autoincrement())
-  amount    Int
-  point     Int
+  amount     Int
+  type      String
   createdAt DateTime @default(now())
   userId Int
 }
@@ -37,11 +38,13 @@ model ProductStat {
   sales     Int
 
   productId Int
+
+  @@unique([productId, date])
 }
 
 model ProductOption {
   optionId  Int     @id @default(autoincrement())
-  name      String
+  optionName      String
   stock     Int
   price     Int
 
@@ -54,6 +57,8 @@ model Coupon {
   benefit      Int
   maxDiscount  Int
   minPrice     Int
+
+  couponIssues CouponIssue[]
 }
 
 model CouponIssue {
@@ -64,19 +69,46 @@ model CouponIssue {
 
   couponId Int
   userId   Int
+
+  coupon Coupon @relation(fields: [couponId], references: [couponId])
+  user   User   @relation(fields: [userId], references: [userId])
 }
 
+model CouponLimit {
+  id        Int      @id @default(autoincrement())
+  limit     Int
+  issued    Int      @default(0)
+
+    couponId Int
+  
+    @@unique([couponId])
+  }
 model Order {
   orderId      Int      @id @default(autoincrement())
   quantity     Int
   originalPrice Int
-  finalPrice   Int
   address      String
   status       String
+  name        String
+  category     String
+  brand        String
+  optionName   String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   userId         Int
+  productId      Int
   optionId       Int
-  couponIssueId  Int?
+}
+
+model Purchase {
+  purchaseId    Int    @id @default(autoincrement())
+  finalPrice    Int
+  status        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        Int
+  orderId       Int
+  couponIssueId Int
 }

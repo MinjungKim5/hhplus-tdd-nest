@@ -1,4 +1,5 @@
 export class Order {
+  userId: number;
   orderId: number;
   productId: number;
   name: string;
@@ -15,6 +16,7 @@ export class Order {
 }
 
 export class MakeOrderDto {
+  userId: number;
   productId: number;
   name: string;
   category: string;
@@ -26,6 +28,7 @@ export class MakeOrderDto {
   originalPrice: number;
 
   constructor(
+    userId: number,
     productId: number,
     name: string,
     category: string,
@@ -36,6 +39,7 @@ export class MakeOrderDto {
     quantity: number,
     address: string,
   ) {
+    this.userId = userId;
     this.productId = productId;
     this.name = name;
     this.category = category;

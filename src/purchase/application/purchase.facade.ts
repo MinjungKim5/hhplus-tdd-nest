@@ -1,11 +1,11 @@
-import { OrderService } from "src/order/application/order.service";
-import { PurchaseReqDto } from "../controller/purchase.dto";
-import { PurchaseService } from "../domain/purchase.service";
-import { PointService } from "src/point/application/point.service";
-import { ProductService } from "src/product/application/product.service";
-import { IPurchaseRepository } from "../domain/purchase.repository";
-import { CreatePurchaseDto } from "../domain/purchase";
-import { CouponService } from "src/coupon/application/coupon.service";
+import { OrderService } from 'src/order/application/order.service';
+import { PurchaseReqDto } from '../controller/purchase.dto';
+import { PurchaseService } from '../domain/purchase.service';
+import { PointService } from 'src/point/application/point.service';
+import { ProductService } from 'src/product/application/product.service';
+import { IPurchaseRepository } from '../domain/purchase.repository';
+import { CreatePurchaseDto } from '../domain/purchase';
+import { CouponService } from 'src/coupon/application/coupon.service';
 export class PurchaseFacade {
   constructor(
     private readonly purchaseRepository: IPurchaseRepository,
@@ -23,7 +23,9 @@ export class PurchaseFacade {
         throw new Error('이미 사용된 쿠폰입니다.');
       }
     }
-    const finalPrice = coupon ? order.originalPrice - coupon.benefit : order.originalPrice;
+    const finalPrice = coupon
+      ? order.originalPrice - coupon.benefit
+      : order.originalPrice;
     const point = await this.pointService.getPointByUser(dto.userId);
     const newPoint = point - finalPrice;
     if (newPoint < 0) {
@@ -42,10 +44,10 @@ export class PurchaseFacade {
     const createPurchaseDto: CreatePurchaseDto = {
       ...dto,
       finalPrice,
-      type: '결제',
+      status: '결제',
     };
-    const purchase = await this.purchaseRepository.createPurchase(createPurchaseDto);
+    const purchase =
+      await this.purchaseRepository.createPurchase(createPurchaseDto);
     return purchase;
   }
 }
-

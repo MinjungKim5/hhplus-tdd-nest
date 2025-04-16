@@ -1,6 +1,7 @@
 import { OrderStatus } from '../domain/order';
 
 export class MakeOrderCommand {
+  userId: number;
   optionId: number;
   quantity: number;
   address: string;

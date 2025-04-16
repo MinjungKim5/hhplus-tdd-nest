@@ -8,19 +8,160 @@ export const OrderRepositoryToken = 'OrderRepositoryToken';
 @Injectable()
 export class OrderRepository implements IOrderRepository {
   constructor(private readonly prisma: PrismaService) {}
-  getOrderListByUser(userId: number): Promise<Order[]> {
-    return Promise.resolve([]);
+
+  async getOrderListByUser(userId: number): Promise<Order[]> {
+    const orders = await this.prisma.order.findMany({
+      where: {
+        userId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return orders.map((order) => ({
+      orderId: order.orderId,
+      quantity: order.quantity,
+      originalPrice: order.originalPrice,
+      address: order.address,
+      status: order.status as OrderStatus,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      userId: order.userId,
+      optionId: order.optionId,
+      productId: null,
+      name: null,
+      category: null,
+      brand: null,
+      optionName: null,
+    }));
   }
-  getOrder(orderId: number): Promise<Order> {
-    return Promise.resolve(null);
+
+  async getOrder(orderId: number): Promise<Order> {
+    const order = await this.prisma.order.findUnique({
+      where: {
+        orderId: orderId,
+      },
+    });
+
+    if (!order) {
+      throw new Error(`Order with ID ${orderId} not found`);
+    }
+
+    return {
+      orderId: order.orderId,
+      quantity: order.quantity,
+      originalPrice: order.originalPrice,
+      address: order.address,
+      status: order.status as OrderStatus,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      userId: order.userId,
+      optionId: order.optionId,
+      productId: order.productId,
+      name: order.name,
+      category: order.category,
+      brand: order.brand,
+      optionName: order.optionName,
+    };
   }
-  createOrder(order: MakeOrderDto): Promise<Order> {
-    return null;
+
+  async createOrder(order: MakeOrderDto): Promise<Order> {
+    const result = await this.prisma.order.create({
+      data: {
+        userId: order.userId,
+        productId: order.productId,
+        optionId: order.optionId,
+        quantity: order.quantity,
+        originalPrice: order.originalPrice,
+        address: order.address,
+        name: order.name,
+        category: order.category,
+        brand: order.brand,
+        optionName: order.optionName,
+        status: OrderStatus.PENDING,
+      },
+    });
+
+    return {
+      orderId: result.orderId,
+      quantity: result.quantity,
+      originalPrice: result.originalPrice,
+      address: result.address,
+      status: result.status as OrderStatus,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      userId: result.userId,
+      optionId: result.optionId,
+      productId: null,
+      name: null,
+      category: null,
+      brand: null,
+      optionName: null,
+    };
   }
-  updateOrder(orderId: number, orderChange: MakeOrderDto): Promise<Order> {
-    return null;
+
+  async updateOrder(
+    orderId: number,
+    orderChange: MakeOrderDto,
+  ): Promise<Order> {
+    const updatedOrder = await this.prisma.order.update({
+      where: {
+        orderId: orderId,
+      },
+      data: {
+        quantity: orderChange.quantity,
+        originalPrice: orderChange.originalPrice,
+        address: orderChange.address,
+      },
+    });
+
+    return {
+      orderId: updatedOrder.orderId,
+      quantity: updatedOrder.quantity,
+      originalPrice: updatedOrder.originalPrice,
+      address: updatedOrder.address,
+      status: updatedOrder.status as OrderStatus,
+      createdAt: updatedOrder.createdAt,
+      updatedAt: updatedOrder.updatedAt,
+      userId: updatedOrder.userId,
+      optionId: updatedOrder.optionId,
+      productId: updatedOrder.productId,
+      name: updatedOrder.name,
+      category: updatedOrder.category,
+      brand: updatedOrder.brand,
+      optionName: updatedOrder.optionName,
+    };
   }
-  updateOrderStatus(orderId: number, status: OrderStatus): Promise<Order> {
-    return null;
+
+  async updateOrderStatus(
+    orderId: number,
+    status: OrderStatus,
+  ): Promise<Order> {
+    const updatedOrder = await this.prisma.order.update({
+      where: {
+        orderId: orderId,
+      },
+      data: {
+        status: status,
+      },
+    });
+
+    return {
+      orderId: updatedOrder.orderId,
+      quantity: updatedOrder.quantity,
+      originalPrice: updatedOrder.originalPrice,
+      address: updatedOrder.address,
+      status: updatedOrder.status as OrderStatus,
+      createdAt: updatedOrder.createdAt,
+      updatedAt: updatedOrder.updatedAt,
+      userId: updatedOrder.userId,
+      optionId: updatedOrder.optionId,
+      productId: updatedOrder.productId,
+      name: updatedOrder.name,
+      category: updatedOrder.category,
+      brand: updatedOrder.brand,
+      optionName: updatedOrder.optionName,
+    };
   }
 }

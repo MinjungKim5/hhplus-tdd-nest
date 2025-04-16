@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-  // relationMode = "prisma"
+  relationMode = "prisma"
 }
 
 model User {
@@ -14,9 +14,6 @@ model User {
   name         String
   email        String          @unique
   point        Int             @default(0)
-  pointHistory PointHistory[]
-  couponIssues CouponIssue[]
-  orders       Order[]
 }
 
 model PointHistory {
@@ -25,7 +22,6 @@ model PointHistory {
   point     Int
   createdAt DateTime @default(now())
   userId Int
-  user   User @relation(fields: [userId], references: [userId])
 }
 
 model Product {
@@ -33,8 +29,6 @@ model Product {
   name          String
   category      String
   brand         String
-
-  productOptions ProductOption[]
 }
 
 model ProductStat {
@@ -52,9 +46,6 @@ model ProductOption {
   price     Int
 
   productId Int
-  product   Product @relation(fields: [productId], references: [productId])
-
-  orders    Order[]
 }
 
 model Coupon {
@@ -63,8 +54,6 @@ model Coupon {
   benefit      Int
   maxDiscount  Int
   minPrice     Int
-
-  couponIssues CouponIssue[]
 }
 
 model CouponIssue {
@@ -75,10 +64,6 @@ model CouponIssue {
 
   couponId Int
   userId   Int
-
-  coupon Coupon @relation(fields: [couponId], references: [couponId])
-  user   User   @relation(fields: [userId], references: [userId])
-  orders Order[]
 }
 
 model Order {
@@ -94,8 +79,4 @@ model Order {
   userId         Int
   optionId       Int
   couponIssueId  Int?
-
-  user           User           @relation(fields: [userId], references: [userId])
-  option         ProductOption  @relation(fields: [optionId], references: [optionId])
-  couponIssue    CouponIssue?   @relation(fields: [couponIssueId], references: [couponIssueId])
 }

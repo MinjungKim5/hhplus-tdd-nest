@@ -21,6 +21,7 @@ export class OrderService {
       throw new Error('재고가 부족합니다.');
     }
     const newOrder = new MakeOrderDto(
+      command.userId,
       productOption.productId,
       productOption.name,
       productOption.category,
@@ -58,6 +59,7 @@ export class OrderService {
       throw new Error('재고가 부족합니다.');
     }
     const orderChange = new MakeOrderDto(
+      command.userId,
       productOption.productId,
       productOption.name,
       productOption.category,
