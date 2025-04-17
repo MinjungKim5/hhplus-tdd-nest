@@ -29,11 +29,11 @@ export class ProductService {
     return this.productRepository.getOptionStock(optionId);
   }
 
-  updateOptionStock(optionId: number, stock: number): Promise<void> {
-    return this.productRepository.updateOptionStock(optionId, stock);
+  async updateOptionStock(optionId: number, stock: number): Promise<void> {
+    return await this.productRepository.updateOptionStock(optionId, stock);
   }
 
-  addProductSales(productId: number, quantity: number): Promise<void> {
-    return this.productRepository.addProductSales(productId, quantity);
+  async addProductSales(productId: number, quantity: number): Promise<void> {
+    return await this.productRepository.addProductSales(productId, quantity);
   }
 }

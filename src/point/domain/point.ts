@@ -2,16 +2,7 @@ export class UserPoint {
   point: number;
 }
 
-/**
- * 포인트 트랜잭션 종류
- * - CHARGE : 충전
- * - USE : 사용
- */
-export enum TransactionType {
-  CHARGE,
-  USE,
-}
-
+export type TransactionType = 'charge' | 'use';
 export class PointHistory {
   id: number;
   userId: number;

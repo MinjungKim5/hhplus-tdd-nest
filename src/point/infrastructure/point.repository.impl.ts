@@ -1,21 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import { IPointRepository } from '../domain/point.repository';
-import { PointHistory, UserPoint } from '../domain/point';
+import { PointHistory, TransactionType, UserPoint } from '../domain/point';
 import { PointHistoryCriteria } from '../application/point.application.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 export const PointRepositoryToken = 'PointRepositoryToken';
 @Injectable()
 export class PointRepository implements IPointRepository {
-  getPointByUser(userId: number): Promise<number> {
-    throw new Error('Method not implemented.');
+  constructor(private readonly prisma: PrismaService) {}
+  async getPointByUser(userId: number): Promise<number> {
+    const result = await this.prisma.user.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    if (!result) throw new Error('User not found');
+    return result.point;
   }
-  getPointHistory(userId: number): Promise<PointHistory[]> {
-    throw new Error('Method not implemented.');
+  async getPointHistory(userId: number): Promise<PointHistory[]> {
+    const results = await this.prisma.pointHistory.findMany({
+      where: { userId },
+    });
+    return results.map((result) => ({
+      ...result,
+      type: result.type as TransactionType,
+    }));
   }
-  updatePointBalance(userId: number, balance: number): Promise<UserPoint> {
-    throw new Error('Method not implemented.');
+  async updatePointBalance(
+    userId: number,
+    balance: number,
+  ): Promise<UserPoint> {
+    return await this.prisma.user.update({
+      where: { userId },
+      data: { point: balance },
+    });
   }
-  createPointHistory(criteria: PointHistoryCriteria): Promise<boolean> {
-    throw new Error('Method not implemented.');
+  async createPointHistory(criteria: PointHistoryCriteria): Promise<boolean> {
+    try {
+      await this.prisma.pointHistory.create({
+        data: {
+          ...criteria,
+        },
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to create point history:', error);
+      return false;
+    }
   }
 }
