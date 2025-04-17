@@ -53,11 +53,11 @@ model ProductOption {
 
 model Coupon {
   couponId     Int           @id @default(autoincrement())
-  type         String
+  couponType         String
   benefit      Int
   maxDiscount  Int
   minPrice     Int
-
+  dueDate     DateTime
   couponIssues CouponIssue[]
 }
 
@@ -110,5 +110,5 @@ model Purchase {
 
   userId        Int
   orderId       Int
-  couponIssueId Int
+  couponIssueId Int?
 }

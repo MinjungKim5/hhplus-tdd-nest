@@ -46,21 +46,26 @@ export class ProductRepository implements IProductRepository {
     return { ...option, ...product };
   }
 
-  getOptionStock(optionId: number): Promise<number> {
-    return this.prisma.productOption
-      .findUnique({ where: { optionId }, select: { stock: true } })
-      .then((value) => value.stock);
+  async getOptionStock(optionId: number): Promise<number> {
+    const value = await this.prisma.productOption.findUnique({
+      where: { optionId },
+      select: { stock: true },
+    });
+    return value.stock;
   }
 
-  updateOptionStock(optionId: number, stock: number): Promise<void> {
-    this.prisma.productOption.update({ where: { optionId }, data: { stock } });
+  async updateOptionStock(optionId: number, stock: number): Promise<void> {
+    await this.prisma.productOption.update({
+      where: { optionId },
+      data: { stock },
+    });
     return;
   }
 
-  addProductSales(productId: number, quantity: number): Promise<void> {
+  async addProductSales(productId: number, quantity: number): Promise<void> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    this.prisma.productStat.upsert({
+    await this.prisma.productStat.upsert({
       where: { productId_date: { productId, date: todayStart } },
       update: {
         sales: {

@@ -29,11 +29,11 @@ export class OrderRepository implements IOrderRepository {
       updatedAt: order.updatedAt,
       userId: order.userId,
       optionId: order.optionId,
-      productId: null,
-      name: null,
-      category: null,
-      brand: null,
-      optionName: null,
+      productId: order.productId,
+      name: order.name,
+      category: order.category,
+      brand: order.brand,
+      optionName: order.optionName,
     }));
   }
 
@@ -93,11 +93,11 @@ export class OrderRepository implements IOrderRepository {
       updatedAt: result.updatedAt,
       userId: result.userId,
       optionId: result.optionId,
-      productId: null,
-      name: null,
-      category: null,
-      brand: null,
-      optionName: null,
+      productId: result.productId,
+      name: result.name,
+      category: result.category,
+      brand: result.brand,
+      optionName: result.optionName,
     };
   }
 
@@ -110,6 +110,11 @@ export class OrderRepository implements IOrderRepository {
         orderId: orderId,
       },
       data: {
+        optionId: orderChange.optionId,
+        category: orderChange.category,
+        brand: orderChange.brand,
+        name: orderChange.name,
+        optionName: orderChange.optionName,
         quantity: orderChange.quantity,
         originalPrice: orderChange.originalPrice,
         address: orderChange.address,

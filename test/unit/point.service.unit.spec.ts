@@ -111,8 +111,8 @@ describe('PointService', () => {
     it('충전 한도를 초과할 경우 오류가 발생한다.', async () => {
       pointRepository.getPointByUser.mockResolvedValue(9500);
 
-      await expect(service.chargePoint(1, 600)).rejects.toThrow(
-        '충전 한도를 초과했습니다.',
+      await expect(service.chargePoint(1, 100000000)).rejects.toThrow(
+        '최대 잔액 한도를 초과했습니다.',
       );
     });
   });

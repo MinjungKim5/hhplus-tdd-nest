@@ -9,7 +9,6 @@ export const CouponRepositoryToken = Symbol('CouponRepository');
 export class CouponRepository implements ICouponRepository {
   constructor(
     @Inject(CouponRepositoryToken)
-    private readonly couponRepository: ICouponRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -23,57 +22,55 @@ export class CouponRepository implements ICouponRepository {
     return result;
   }
 
-  getCouponIssuesByUserId(userId: number): Promise<CouponIssue[]> {
-    return this.prisma.couponIssue
-      .findMany({
-        where: {
-          userId: userId,
-        },
-        include: {
-          coupon: true,
-        },
-      })
-      .then((results) => {
-        return results.map((result) =>
-          plainToInstance(CouponIssue, {
-            ...result,
-            ...result.coupon,
-          }),
-        );
-      });
+  async getCouponIssuesByUserId(userId: number): Promise<CouponIssue[]> {
+    const results = await this.prisma.couponIssue.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        coupon: true,
+      },
+    });
+    return results.map((result) =>
+      plainToInstance(CouponIssue, {
+        ...result,
+        ...result.coupon,
+      }),
+    );
   }
 
-  getCouponIssue(couponIssueId: number): Promise<CouponIssue> {
-    return this.prisma.couponIssue
-      .findUnique({
+  async getCouponIssue(couponIssueId: number): Promise<CouponIssue> {
+    try {
+      const result = await this.prisma.couponIssue.findUniqueOrThrow({
         where: {
           couponIssueId: couponIssueId,
         },
         include: {
           coupon: true,
         },
-      })
-      .then((result) => {
-        return plainToInstance(CouponIssue, {
-          ...result,
-          ...result.coupon,
-        });
       });
+      const { coupon, ...couponIssueInfo } = result;
+      return { ...couponIssueInfo, ...coupon };
+    } catch (error) {
+      return null;
+    }
   }
 
-  createCouponIssue(couponId: number, userId: number): Promise<CouponIssue> {
-    return this.prisma.couponIssue
-      .create({
-        data: {
-          couponId: couponId,
-          userId: userId,
-        },
-      })
-      .then((result) => plainToInstance(CouponIssue, result));
+  async createCouponIssue(
+    couponId: number,
+    userId: number,
+  ): Promise<CouponIssue> {
+    const result = await this.prisma.couponIssue.create({
+      data: {
+        couponId: couponId,
+        userId: userId,
+      },
+    });
+    return plainToInstance(CouponIssue, result);
   }
 
-  updateCouponIssueUsed(couponIssueId: number): Promise<void> {
-    this.prisma.couponIssue.update({
+  async updateCouponIssueUsed(couponIssueId: number): Promise<void> {
+    await this.prisma.couponIssue.update({
       where: {
         couponIssueId: couponIssueId,
       },
@@ -84,20 +81,17 @@ export class CouponRepository implements ICouponRepository {
     return;
   }
 
-  isOnIssue(couponId: number): Promise<boolean> {
-    return this.prisma.couponLimit
-      .findUnique({
-        where: {
-          couponId,
-        },
-      })
-      .then((result) => {
-        return result.limit > result.issued;
-      });
+  async isOnIssue(couponId: number): Promise<boolean> {
+    const result = await this.prisma.couponLimit.findUnique({
+      where: {
+        couponId,
+      },
+    });
+    return result.limit > result.issued;
   }
 
-  addIssueCount(couponId: number): Promise<void> {
-    this.prisma.couponLimit.update({
+  async addIssueCount(couponId: number): Promise<void> {
+    await this.prisma.couponLimit.update({
       where: {
         couponId,
       },

@@ -75,20 +75,25 @@ export const getPrismaClient = () => {
 export const cleanupDatabase = async () => {
   const prisma = getPrismaClient();
 
-  const tables = await prisma.$queryRaw<
-    Array<{ TABLE_NAME: string }>
-  >`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()`;
+  // 모든 테이블 목록 조회
+  const tables = await prisma.$queryRaw<Array<{ TABLE_NAME: string }>>`
+    SELECT TABLE_NAME 
+    FROM information_schema.TABLES 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_TYPE = 'BASE TABLE'
+    AND TABLE_NAME NOT IN ('_prisma_migrations')
+  `;
 
+  // 외래 키 체크 비활성화
+  await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+
+  // 모든 테이블 truncate
   for (const { TABLE_NAME } of tables) {
-    if (TABLE_NAME !== '_prisma_migrations') {
-      try {
-        // DELETE를 사용하여 데이터를 삭제
-        await prisma.$executeRawUnsafe(`DELETE FROM \`${TABLE_NAME}\`;`);
-      } catch (error) {
-        console.log({ error });
-      }
-    }
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${TABLE_NAME}\``);
   }
+
+  // 외래 키 체크 다시 활성화
+  await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
 };
 
 export const teardownTestDatabase = async () => {

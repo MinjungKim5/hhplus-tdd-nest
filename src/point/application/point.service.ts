@@ -68,7 +68,7 @@ export class PointService {
   balanceExceptionCheck(balance: number) {
     const lowerLimit = 0;
     if (balance < lowerLimit) throw new Error('잔액이 부족합니다.');
-    const upperLimit = 10000;
-    if (balance > upperLimit) throw new Error('충전 한도를 초과했습니다.');
+    const upperLimit = 10000000;
+    if (balance > upperLimit) throw new Error('최대 잔액 한도를 초과했습니다.');
   }
 }

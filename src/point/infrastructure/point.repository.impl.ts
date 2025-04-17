@@ -8,47 +8,44 @@ export const PointRepositoryToken = 'PointRepositoryToken';
 @Injectable()
 export class PointRepository implements IPointRepository {
   constructor(private readonly prisma: PrismaService) {}
-  getPointByUser(userId: number): Promise<number> {
-    return this.prisma.user
-      .findUnique({
-        where: {
-          userId: userId,
-        },
-      })
-      .then((result) => {
-        if (!result) throw new Error('User not found');
-        return result.point;
-      });
+  async getPointByUser(userId: number): Promise<number> {
+    const result = await this.prisma.user.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    if (!result) throw new Error('User not found');
+    return result.point;
   }
-  getPointHistory(userId: number): Promise<PointHistory[]> {
-    return this.prisma.pointHistory
-      .findMany({
-        where: { userId },
-      })
-      .then((results) =>
-        results.map((result) => ({
-          ...result,
-          type: result.type as TransactionType,
-        })),
-      );
+  async getPointHistory(userId: number): Promise<PointHistory[]> {
+    const results = await this.prisma.pointHistory.findMany({
+      where: { userId },
+    });
+    return results.map((result) => ({
+      ...result,
+      type: result.type as TransactionType,
+    }));
   }
-  updatePointBalance(userId: number, balance: number): Promise<UserPoint> {
-    return this.prisma.user.update({
+  async updatePointBalance(
+    userId: number,
+    balance: number,
+  ): Promise<UserPoint> {
+    return await this.prisma.user.update({
       where: { userId },
       data: { point: balance },
     });
   }
-  createPointHistory(criteria: PointHistoryCriteria): Promise<boolean> {
-    return this.prisma.pointHistory
-      .create({
+  async createPointHistory(criteria: PointHistoryCriteria): Promise<boolean> {
+    try {
+      await this.prisma.pointHistory.create({
         data: {
           ...criteria,
         },
-      })
-      .then(() => true)
-      .catch((error) => {
-        console.error('Failed to create point history:', error);
-        return false;
       });
+      return true;
+    } catch (error) {
+      console.error('Failed to create point history:', error);
+      return false;
+    }
   }
 }
