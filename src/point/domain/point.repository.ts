@@ -4,6 +4,10 @@ import { PointHistory, UserPoint } from './point';
 export interface IPointRepository {
   getPointByUser(userId: number): Promise<number>;
   getPointHistory(userId: number): Promise<PointHistory[]>;
-  updatePointBalance(userId: number, balance: number): Promise<UserPoint>;
+  updatePointBalance(
+    userId: number,
+    balanceBefore: number,
+    balanceAfter: number,
+  ): Promise<UserPoint>;
   createPointHistory(criteria: PointHistoryCriteria): Promise<boolean>;
 }

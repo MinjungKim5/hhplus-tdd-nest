@@ -6,6 +6,8 @@ export interface ICouponRepository {
   getCouponIssue(couponIssueId: number): Promise<CouponIssue>;
   createCouponIssue(couponId: number, userId: number): Promise<CouponIssue>;
   updateCouponIssueUsed(couponIssueId: number): Promise<void>;
-  isOnIssue(couponId: number): Promise<boolean>;
-  addIssueCount(couponId: number): Promise<void>;
+  getIssueCountAndLimit(
+    couponId: number,
+  ): Promise<{ issued: number; limit: number }>;
+  addIssueCount(couponId: number, issued: number): Promise<void>;
 }

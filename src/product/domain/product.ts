@@ -13,4 +13,5 @@ export class ProductOption extends Product {
   optionName: string;
   price: number;
   stock: number;
+  version: number;
 }

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Product, ProductOption } from '../domain/product';
 import { IProductRepository } from '../domain/product.repository';
 import { ProductRepositoryToken } from '../infrastructure/product.repository.impl';
+import { IRepositoryContext } from 'src/common/unit-of-work';
 
 @Injectable()
 export class ProductService {
@@ -29,11 +30,41 @@ export class ProductService {
     return this.productRepository.getOptionStock(optionId);
   }
 
-  async updateOptionStock(optionId: number, stock: number): Promise<void> {
-    return await this.productRepository.updateOptionStock(optionId, stock);
-  }
+  // async updateOptionStock(optionId: number, stock: number): Promise<void> {
+  //   return await this.productRepository.updateOptionStock(
+  //     optionId,
+  //     stock,
+  //   );
+  // }
 
   async addProductSales(productId: number, quantity: number): Promise<void> {
     return await this.productRepository.addProductSales(productId, quantity);
+  }
+
+  async decreaseOptionStockWithTransaction(
+    ctx: IRepositoryContext,
+    optionId: number,
+    quantity: number,
+  ): Promise<void> {
+    const productOption =
+      await ctx.productRepository.getProductOption(optionId);
+    const newStock = productOption.stock - quantity;
+    if (newStock < 0) {
+      throw new Error('재고가 부족합니다.');
+    }
+    await ctx.productRepository.decrementOptionStock(
+      optionId,
+      quantity,
+      productOption.version,
+    );
+    return;
+  }
+
+  async addProductSalesWithTransaction(
+    ctx: IRepositoryContext,
+    productId: number,
+    quantity: number,
+  ): Promise<void> {
+    await ctx.productRepository.addProductSales(productId, quantity);
   }
 }
