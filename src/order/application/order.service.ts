@@ -5,6 +5,7 @@ import { OrderRepositoryToken } from '../infrastructure/order.repository.impl';
 import { MakeOrderCommand } from './order.application.dto';
 import { ProductRepositoryToken } from 'src/product/infrastructure/product.repository.impl';
 import { IProductRepository } from 'src/product/domain/product.repository';
+import { IRepositoryContext } from 'src/common/unit-of-work';
 
 export class OrderService {
   constructor(
@@ -75,5 +76,20 @@ export class OrderService {
 
   updateOrderStatus(orderId: number, status: OrderStatus): Promise<Order> {
     return this.orderRepository.updateOrderStatus(orderId, status);
+  }
+
+  async getOrderWithTransaction(
+    ctx: IRepositoryContext,
+    orderId: number,
+  ): Promise<Order> {
+    return ctx.orderRepository.getOrder(orderId);
+  }
+
+  async updateOrderStatusWithTransaction(
+    ctx: IRepositoryContext,
+    orderId: number,
+    status: OrderStatus,
+  ): Promise<Order> {
+    return ctx.orderRepository.updateOrderStatus(orderId, status);
   }
 }

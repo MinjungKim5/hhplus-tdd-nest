@@ -10,6 +10,7 @@ import { CouponRepository } from 'src/coupon/infrastructure/coupon.repository.im
 import { PurchaseRepository } from 'src/purchase/infrastructure/purchase.repository.impl';
 import { ProductService } from 'src/product/application/product.service';
 import { OrderStatus } from 'src/order/domain/order';
+import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
 
 describe('PurchaseFacade Integration Tests', () => {
   let prisma: any;
@@ -18,6 +19,7 @@ describe('PurchaseFacade Integration Tests', () => {
   let pointService: PointService;
   let productService: ProductService;
   let couponService: CouponService;
+  let unitOfWork: PrismaUnitOfWork;
 
   beforeAll(async () => {
     prisma = getPrismaClient();
@@ -33,11 +35,22 @@ describe('PurchaseFacade Integration Tests', () => {
     orderService = new OrderService(orderRepository, productRepository);
     pointService = new PointService(pointRepository);
     productService = new ProductService(productRepository);
-    couponService = new CouponService(couponRepository);
+
+    // UnitOfWork 인스턴스 생성
+    unitOfWork = new PrismaUnitOfWork(
+      prisma,
+      orderRepository,
+      productRepository,
+      pointRepository,
+      couponRepository,
+      purchaseRepository,
+    );
+
+    couponService = new CouponService(couponRepository, unitOfWork);
 
     // Facade 인스턴스 생성
     purchaseFacade = new PurchaseFacade(
-      purchaseRepository,
+      unitOfWork,
       orderService,
       pointService,
       productService,
@@ -62,6 +75,24 @@ describe('PurchaseFacade Integration Tests', () => {
           name: 'Jane Doe',
           email: 'jane.doe@example.com',
           point: 500000,
+        },
+        {
+          userId: 3,
+          name: 'Alice Smith',
+          email: 'alice.smith@example.com',
+          point: 9000000,
+        },
+        {
+          userId: 4,
+          name: 'Bob Johnson',
+          email: 'bob.johnson@example.com',
+          point: 8000000,
+        },
+        {
+          userId: 5,
+          name: 'Charlie Brown',
+          email: 'charlie.brown@example.com',
+          point: 7000000,
         },
       ],
     });
@@ -180,7 +211,7 @@ describe('PurchaseFacade Integration Tests', () => {
         userId: 2,
         orderId: order.orderId,
       }),
-    ).rejects.toThrow('포인트가 부족합니다.');
+    ).rejects.toThrow('잔액이 부족합니다.');
   });
 
   it('재고가 부족하면 결제에 실패한다.', async () => {
@@ -204,5 +235,71 @@ describe('PurchaseFacade Integration Tests', () => {
         orderId: order.orderId,
       }),
     ).rejects.toThrow('재고가 부족합니다.');
+  });
+
+  it('동시에 들어온 구매 요청의 총합이 재고를 초과하면 실패한다.', async () => {
+    // given
+    // 3개의 주문을 생성 (각각 2개씩 구매 시도, 총 필요 수량 6개)
+    const orders = await Promise.all([
+      orderService.makeOrder({
+        userId: 3,
+        optionId: 3,
+        quantity: 2,
+        address: '서울시 강남구',
+      }),
+      orderService.makeOrder({
+        userId: 4,
+        optionId: 3,
+        quantity: 2,
+        address: '서울시 강남구',
+      }),
+      orderService.makeOrder({
+        userId: 5,
+        optionId: 3,
+        quantity: 2,
+        address: '서울시 강남구',
+      }),
+    ]);
+
+    await prisma.productOption.update({
+      where: { optionId: 3 },
+      data: { stock: 5 }, // 재고를 5개로 설정
+    });
+
+    // when
+    const purchasePromises = orders.map((order) =>
+      purchaseFacade
+        .purchaseOrder({
+          userId: order.userId,
+          orderId: order.orderId,
+        })
+        .catch((error) => error),
+    );
+
+    const results = await Promise.all(purchasePromises);
+
+    // then
+    // 1. 성공한 구매는 2건이어야 함
+    const successCount = results.filter(
+      (result) => !(result instanceof Error),
+    ).length;
+    expect(successCount).toBe(2);
+
+    // 2. 실패한 구매는 1건이어야 함 (재고 부족)
+    const failCount = results.filter(
+      (result) =>
+        result instanceof Error && result.message === '재고가 부족합니다.',
+    ).length;
+    expect(failCount).toBe(1);
+
+    // 3. 최종 재고는 1개여야 함
+    const finalStock = await productService.getProductOption(3);
+    expect(finalStock.stock).toBe(1);
+
+    // 4. 총 판매량은 4개여야 함 (2개씩 2건 성공)
+    const productStat = await prisma.productStat.findFirst({
+      where: { productId: 2 },
+    });
+    expect(productStat.sales).toBe(4);
   });
 });

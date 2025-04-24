@@ -4,12 +4,13 @@ import { PurchaseService } from '../domain/purchase.service';
 import { PointService } from 'src/point/application/point.service';
 import { ProductService } from 'src/product/application/product.service';
 import { IPurchaseRepository } from '../domain/purchase.repository';
-import { CreatePurchaseDto } from '../domain/purchase';
 import { CouponService } from 'src/coupon/application/coupon.service';
 import { OrderStatus } from 'src/order/domain/order';
+import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { Inject } from '@nestjs/common';
 export class PurchaseFacade {
   constructor(
-    private readonly purchaseRepository: IPurchaseRepository,
+    private readonly unitOfWork: PrismaUnitOfWork,
     private readonly orderService: OrderService,
     private readonly pointService: PointService,
     private readonly productService: ProductService,
@@ -17,58 +18,89 @@ export class PurchaseFacade {
   ) {}
 
   async purchaseOrder(dto: PurchaseReqDto) {
-    const order = await this.orderService.getOrder(dto.orderId);
-    const coupon = await this.couponService.getCouponIssue(dto.couponIssueId);
-    if (coupon) {
-      if (coupon.used === true) {
-        throw new Error('이미 사용된 쿠폰입니다.');
-      }
-      if (coupon.dueDate < new Date()) {
-        throw new Error('쿠폰이 만료되었습니다.');
-      }
-      if (order.originalPrice < coupon.minPrice) {
-        throw new Error('최소 사용 금액에 미달합니다.');
-      }
-    }
-    let finalPrice = order.originalPrice;
-    switch (coupon?.couponType) {
-      case 'amount':
-        finalPrice -= coupon.benefit;
-        break;
-      case 'percent':
-        finalPrice -= Math.min(
-          Math.floor((order.originalPrice * coupon.benefit) / 100),
-          coupon.maxDiscount,
-        );
-      default:
-        break;
-    }
-    const point = await this.pointService.getPointByUser(dto.userId);
-    const newPoint = point - finalPrice;
-    if (newPoint < 0) {
-      throw new Error('포인트가 부족합니다.');
-    }
-    const stock = await this.productService.getOptionStock(order.optionId);
-    const newStock = stock - order.quantity;
-    if (newStock < 0) {
-      throw new Error('재고가 부족합니다.');
-    }
+    let retries = 3;
 
-    await this.pointService.usePoint(dto.userId, finalPrice);
-    if (coupon) await this.couponService.useCoupon(dto.couponIssueId);
-    await this.productService.updateOptionStock(order.optionId, newStock);
-    await this.productService.addProductSales(order.productId, order.quantity);
-    await this.orderService.updateOrderStatus(
-      order.orderId,
-      OrderStatus.COMPLETED,
-    );
-    const createPurchaseDto: CreatePurchaseDto = {
-      ...dto,
-      finalPrice,
-      status: '결제',
-    };
-    const purchase =
-      await this.purchaseRepository.createPurchase(createPurchaseDto);
-    return purchase;
+    while (retries > 0) {
+      try {
+        return await this.unitOfWork.runInTransaction(async (ctx) => {
+          // 주문 조회
+          const order = await this.orderService.getOrderWithTransaction(
+            ctx,
+            dto.orderId,
+          );
+
+          // 쿠폰 조회 및 할인 계산
+          let finalPrice = order.originalPrice;
+          if (dto.couponIssueId) {
+            finalPrice = await this.couponService.applyCouponWithTransaction(
+              ctx,
+              finalPrice,
+              dto.couponIssueId,
+            );
+          }
+
+          // 포인트 차감
+          await this.pointService.usePointWithTransaction(
+            ctx,
+            dto.userId,
+            finalPrice,
+          );
+
+          // 쿠폰 사용
+          if (dto.couponIssueId) {
+            await this.couponService.useCouponWithTransaction(
+              ctx,
+              dto.couponIssueId,
+            );
+          }
+
+          // 재고 업데이트
+          await this.productService.decreaseOptionStockWithTransaction(
+            ctx,
+            order.optionId,
+            order.quantity,
+          );
+
+          // 판매량 업데이트
+          await this.productService.addProductSalesWithTransaction(
+            ctx,
+            order.productId,
+            order.quantity,
+          );
+
+          // 주문 상태 업데이트
+          await this.orderService.updateOrderStatusWithTransaction(
+            ctx,
+            order.orderId,
+            OrderStatus.COMPLETED,
+          );
+
+          return await ctx.purchaseRepository.createPurchase({
+            ...dto,
+            finalPrice,
+            status: '결제',
+          });
+        });
+      } catch (error) {
+        // 재시도하면 안 되는 에러들
+        if (
+          error.message === '재고가 부족합니다.' ||
+          error.message === '잔액이 부족합니다.' ||
+          error.message === '이미 사용된 쿠폰입니다.'
+        ) {
+          throw error;
+        }
+
+        retries--;
+        if (retries === 0) {
+          throw new Error(
+            '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+          );
+        }
+
+        // 재시도 전 잠시 대기
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    }
   }
 }

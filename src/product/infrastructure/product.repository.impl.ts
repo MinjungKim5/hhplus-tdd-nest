@@ -54,30 +54,48 @@ export class ProductRepository implements IProductRepository {
     return value.stock;
   }
 
-  async updateOptionStock(optionId: number, stock: number): Promise<void> {
-    await this.prisma.productOption.update({
-      where: { optionId },
-      data: { stock },
+  async decrementOptionStock(
+    optionId: number,
+    quantity: number,
+    version: number,
+  ): Promise<void> {
+    const result = await this.prisma.productOption.updateMany({
+      where: {
+        optionId,
+        version,
+      },
+      data: {
+        stock: { decrement: quantity },
+        version: { increment: 1 },
+      },
     });
+
+    if (result.count === 0) {
+      throw new Error('동시성 문제 발생!');
+    }
     return;
   }
 
   async addProductSales(productId: number, quantity: number): Promise<void> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    await this.prisma.productStat.upsert({
-      where: { productId_date: { productId, date: todayStart } },
-      update: {
-        sales: {
-          increment: quantity,
+    try {
+      await this.prisma.productStat.upsert({
+        where: { productId_date: { productId, date: todayStart } },
+        update: {
+          sales: {
+            increment: quantity,
+          },
         },
-      },
-      create: {
-        productId,
-        date: todayStart,
-        sales: quantity,
-      },
-    });
+        create: {
+          productId,
+          date: todayStart,
+          sales: quantity,
+        },
+      });
+    } catch (error) {
+      throw new Error('상품 판매 통계 업데이트에 실패했습니다.');
+    }
     return;
   }
 }

@@ -3,6 +3,7 @@ import { PointHistory, TransactionType, UserPoint } from '../domain/point';
 import { IPointRepository } from '../domain/point.repository';
 import { PointRepositoryToken } from '../infrastructure/point.repository.impl';
 import { PointHistoryResponse } from './point.application.dto';
+import { IRepositoryContext } from 'src/common/unit-of-work';
 @Injectable()
 export class PointService {
   constructor(
@@ -31,38 +32,62 @@ export class PointService {
     const balanceAfterCharge = currentPoint + amount;
     // 포인트 잔액에 대한 예외처리
     this.balanceExceptionCheck(balanceAfterCharge);
-    const result = await this.pointRepository.updatePointBalance(
-      userId,
-      balanceAfterCharge,
-    );
-    if (!result) throw new Error('포인트 저장 실패');
-    await this.pointRepository.createPointHistory({
-      userId,
-      amount,
-      type: 'charge',
-    });
-    // point lock 반환
-    return { point: result.point };
+    try {
+      const result = await this.pointRepository.updatePointBalance(
+        userId,
+        currentPoint,
+        balanceAfterCharge,
+      );
+      await this.pointRepository.createPointHistory({
+        userId,
+        amount,
+        type: 'charge',
+      });
+      return { point: result.point };
+    } catch (error) {
+      throw new Error('포인트 충전 실패');
+    }
   }
 
   async usePoint(userId: number, amount: number): Promise<UserPoint> {
-    // point lock 획득
     const currentPoint = await this.getPointByUser(userId);
     const balanceAfterUse = currentPoint - amount;
     // 포인트 잔액에 대한 예외처리
     this.balanceExceptionCheck(balanceAfterUse);
     const result = await this.pointRepository.updatePointBalance(
       userId,
+      currentPoint,
       balanceAfterUse,
     );
-    if (!result) throw new Error('포인트 저장 실패');
     await this.pointRepository.createPointHistory({
       userId,
       amount,
       type: 'use',
     });
-    // point lock 반환
     return { point: result.point };
+  }
+
+  async usePointWithTransaction(
+    ctx: IRepositoryContext,
+    userId: number,
+    amount: number,
+  ): Promise<void> {
+    const currentPoint = await ctx.pointRepository.getPointByUser(userId);
+    const balanceAfterUse = currentPoint - amount;
+
+    this.balanceExceptionCheck(balanceAfterUse);
+
+    await ctx.pointRepository.updatePointBalance(
+      userId,
+      currentPoint,
+      balanceAfterUse,
+    );
+
+    await ctx.pointRepository.createPointHistory({
+      userId,
+      amount,
+      type: 'use',
+    });
   }
 
   balanceExceptionCheck(balance: number) {

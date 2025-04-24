@@ -28,11 +28,12 @@ export class PointRepository implements IPointRepository {
   }
   async updatePointBalance(
     userId: number,
-    balance: number,
+    balanceBefore: number,
+    balanceAfter: number,
   ): Promise<UserPoint> {
     return await this.prisma.user.update({
-      where: { userId },
-      data: { point: balance },
+      where: { userId, point: balanceBefore },
+      data: { point: balanceAfter },
     });
   }
   async createPointHistory(criteria: PointHistoryCriteria): Promise<boolean> {

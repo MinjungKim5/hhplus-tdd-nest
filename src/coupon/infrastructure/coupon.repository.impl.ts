@@ -60,40 +60,51 @@ export class CouponRepository implements ICouponRepository {
     couponId: number,
     userId: number,
   ): Promise<CouponIssue> {
-    const result = await this.prisma.couponIssue.create({
-      data: {
-        couponId: couponId,
-        userId: userId,
-      },
-    });
-    return plainToInstance(CouponIssue, result);
+    try {
+      const result = await this.prisma.couponIssue.create({
+        data: {
+          couponId: couponId,
+          userId: userId,
+        },
+      });
+      return plainToInstance(CouponIssue, result);
+    } catch (error) {
+      throw new Error('쿠폰 발급에 실패했습니다. 이미 발급된 쿠폰입니다.');
+    }
   }
 
   async updateCouponIssueUsed(couponIssueId: number): Promise<void> {
-    await this.prisma.couponIssue.update({
-      where: {
-        couponIssueId: couponIssueId,
-      },
-      data: {
-        used: true,
-      },
-    });
-    return;
+    try {
+      await this.prisma.couponIssue.update({
+        where: {
+          couponIssueId: couponIssueId,
+          used: false,
+        },
+        data: {
+          used: true,
+        },
+      });
+    } catch (error) {
+      throw new Error('쿠폰 사용에 실패했습니다. 이미 사용된 쿠폰입니다.');
+    }
   }
 
-  async isOnIssue(couponId: number): Promise<boolean> {
+  async getIssueCountAndLimit(
+    couponId: number,
+  ): Promise<{ issued: number; limit: number }> {
     const result = await this.prisma.couponLimit.findUnique({
       where: {
         couponId,
       },
     });
-    return result.limit > result.issued;
+    return { issued: result.issued, limit: result.limit };
   }
 
-  async addIssueCount(couponId: number): Promise<void> {
-    await this.prisma.couponLimit.update({
+  async addIssueCount(couponId: number, issued: number): Promise<void> {
+    const result = await this.prisma.couponLimit.updateMany({
       where: {
         couponId,
+        issued, // 현재 발급 수량과 일치하는 경우에만 업데이트
       },
       data: {
         issued: {
@@ -101,6 +112,9 @@ export class CouponRepository implements ICouponRepository {
         },
       },
     });
-    return;
+
+    if (result.count === 0) {
+      throw new Error('쿠폰 발급에 실패했습니다. 선착순 마감되었습니다.');
+    }
   }
 }
