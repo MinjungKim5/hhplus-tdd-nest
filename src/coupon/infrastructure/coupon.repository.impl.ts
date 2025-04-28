@@ -4,13 +4,10 @@ import { Coupon, CouponIssue } from '../domain/coupon';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { plainToInstance } from 'class-transformer'; // class-transformer 패키지 필요
 
-export const CouponRepositoryToken = Symbol('CouponRepository');
+export const CouponRepositoryToken = 'CouponRepositoryToken';
 
 export class CouponRepository implements ICouponRepository {
-  constructor(
-    @Inject(CouponRepositoryToken)
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getCouponList(): Promise<Coupon[]> {
     const result = await this.prisma.$queryRawUnsafe<Coupon[]>(`
