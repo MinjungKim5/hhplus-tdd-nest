@@ -46,6 +46,21 @@ export class ProductRepository implements IProductRepository {
     return { ...option, ...product };
   }
 
+  async getProductOptionForUpdate(optionId: number): Promise<ProductOption> {
+    const option = await this.prisma.$queryRaw<ProductOption>`
+      SELECT * 
+      FROM ProductOption 
+      WHERE optionId = ${optionId}
+      FOR UPDATE
+    `;
+
+    if (!option) {
+      throw new Error('해당 옵션을 찾을 수 없습니다.');
+    }
+
+    return option;
+  }
+
   async getOptionStock(optionId: number): Promise<number> {
     const value = await this.prisma.productOption.findUnique({
       where: { optionId },
@@ -57,12 +72,10 @@ export class ProductRepository implements IProductRepository {
   async decrementOptionStock(
     optionId: number,
     quantity: number,
-    version: number,
   ): Promise<void> {
     const result = await this.prisma.productOption.updateMany({
       where: {
         optionId,
-        version,
       },
       data: {
         stock: { decrement: quantity },

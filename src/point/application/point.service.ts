@@ -3,12 +3,13 @@ import { PointHistory, TransactionType, UserPoint } from '../domain/point';
 import { IPointRepository } from '../domain/point.repository';
 import { PointRepositoryToken } from '../infrastructure/point.repository.impl';
 import { PointHistoryResponse } from './point.application.dto';
-import { IRepositoryContext } from 'src/common/unit-of-work';
+import { UserLock } from 'src/user/infrastructure/user.lock';
 @Injectable()
 export class PointService {
   constructor(
     @Inject(PointRepositoryToken)
     private readonly pointRepository: IPointRepository,
+    private readonly userLock: UserLock,
   ) {}
   async getPointByUser(userId: number): Promise<number> {
     return await this.pointRepository.getPointByUser(userId);
@@ -27,12 +28,13 @@ export class PointService {
   }
 
   async chargePoint(userId: number, amount: number): Promise<UserPoint> {
-    // point lock 획득
-    const currentPoint = await this.getPointByUser(userId);
-    const balanceAfterCharge = currentPoint + amount;
-    // 포인트 잔액에 대한 예외처리
-    this.balanceExceptionCheck(balanceAfterCharge);
+    const lock = await this.userLock.acquireUserLock(userId);
     try {
+      const currentPoint = await this.getPointByUser(userId);
+      const balanceAfterCharge = currentPoint + amount;
+
+      // 포인트 잔액에 대한 예외처리
+      this.balanceExceptionCheck(balanceAfterCharge);
       const result = await this.pointRepository.updatePointBalance(
         userId,
         currentPoint,
@@ -45,7 +47,12 @@ export class PointService {
       });
       return { point: result.point };
     } catch (error) {
-      throw new Error('포인트 충전 실패');
+      throw new Error(`포인트 충전 실패: ${error}`);
+    } finally {
+      // 락 해제
+      if (lock) {
+        await this.userLock.releaseUserLock(lock);
+      }
     }
   }
 
@@ -67,6 +74,7 @@ export class PointService {
     return { point: result.point };
   }
 
+  /* 포인트는 분산락 사용으로 트랜잭션에서 제외
   async usePointWithTransaction(
     ctx: IRepositoryContext,
     userId: number,
@@ -89,6 +97,7 @@ export class PointService {
       type: 'use',
     });
   }
+  */
 
   balanceExceptionCheck(balance: number) {
     const lowerLimit = 0;

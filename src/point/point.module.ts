@@ -5,8 +5,10 @@ import {
   PointRepository,
   PointRepositoryToken,
 } from './infrastructure/point.repository.impl';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
+  imports: [UserModule],
   controllers: [PointController],
   providers: [
     PointService,
