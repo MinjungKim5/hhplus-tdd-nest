@@ -27,7 +27,6 @@ describe('CouponService Integration Tests', () => {
       prisma,
       orderRepository,
       productRepository,
-      pointRepository,
       couponRepository,
       purchaseRepository,
     );

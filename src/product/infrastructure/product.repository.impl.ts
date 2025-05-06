@@ -47,7 +47,7 @@ export class ProductRepository implements IProductRepository {
   }
 
   async getProductOptionForUpdate(optionId: number): Promise<ProductOption> {
-    const option = await this.prisma.$queryRaw<ProductOption>`
+    const [option] = await this.prisma.$queryRaw<ProductOption[]>`
       SELECT * 
       FROM ProductOption 
       WHERE optionId = ${optionId}

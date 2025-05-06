@@ -1,4 +1,10 @@
 import { getPrismaClient, cleanupDatabase } from '../prisma.util';
+import {
+  getRedisClient,
+  cleanupRedis,
+  teardownRedis,
+  setupRedis,
+} from '../redis.util';
 import { PurchaseFacade } from 'src/purchase/application/purchase.facade';
 import { OrderService } from 'src/order/application/order.service';
 import { OrderRepository } from 'src/order/infrastructure/order.repository.impl';
@@ -11,6 +17,9 @@ import { PurchaseRepository } from 'src/purchase/infrastructure/purchase.reposit
 import { ProductService } from 'src/product/application/product.service';
 import { OrderStatus } from 'src/order/domain/order';
 import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { RedisLock } from 'src/redis/redis.lock';
+import { UserLock } from 'src/user/infrastructure/user.lock';
+import Redis from 'ioredis';
 
 describe('PurchaseFacade Integration Tests', () => {
   let prisma: any;
@@ -20,9 +29,23 @@ describe('PurchaseFacade Integration Tests', () => {
   let productService: ProductService;
   let couponService: CouponService;
   let unitOfWork: PrismaUnitOfWork;
+  let redisClient: Redis;
+  let redisLock: RedisLock;
+  let userLock: UserLock;
 
   beforeAll(async () => {
     prisma = getPrismaClient();
+
+    try {
+      redisClient = await setupRedis(); // 한 번만 초기화
+    } catch (error) {
+      console.error('Error setting up Redis:', error);
+      throw error;
+    }
+
+    // Redis 서비스 인스턴스 생성
+    redisLock = new RedisLock(redisClient);
+    userLock = new UserLock(redisLock);
 
     // 레포지토리 인스턴스 생성
     const orderRepository = new OrderRepository(prisma);
@@ -33,7 +56,7 @@ describe('PurchaseFacade Integration Tests', () => {
 
     // 서비스 인스턴스 생성
     orderService = new OrderService(orderRepository, productRepository);
-    pointService = new PointService(pointRepository);
+    pointService = new PointService(pointRepository, userLock); // userLock 주입
     productService = new ProductService(productRepository);
 
     // UnitOfWork 인스턴스 생성
@@ -41,7 +64,6 @@ describe('PurchaseFacade Integration Tests', () => {
       prisma,
       orderRepository,
       productRepository,
-      pointRepository,
       couponRepository,
       purchaseRepository,
     );
@@ -55,11 +77,19 @@ describe('PurchaseFacade Integration Tests', () => {
       pointService,
       productService,
       couponService,
+      userLock,
     );
+  });
+
+  afterAll(async () => {
+    await cleanupRedis();
+    await teardownRedis();
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
     await cleanupDatabase();
+    await cleanupRedis();
 
     // 1. 유저 데이터 삽입
     await prisma.user.createMany({
@@ -301,5 +331,120 @@ describe('PurchaseFacade Integration Tests', () => {
       where: { productId: 2 },
     });
     expect(productStat.sales).toBe(4);
+  });
+
+  describe('분산 락 테스트', () => {
+    it('동시에 들어온 포인트 차감 요청이 분산락으로 인해 순차적으로 처리된다', async () => {
+      // given
+      await prisma.user.update({
+        where: { userId: 1 },
+        data: { point: 4000000 },
+      });
+
+      const orders = await Promise.all([
+        orderService.makeOrder({
+          userId: 1,
+          optionId: 1,
+          quantity: 1,
+          address: '서울시 강남구',
+        }),
+        orderService.makeOrder({
+          userId: 1,
+          optionId: 1,
+          quantity: 1,
+          address: '서울시 강남구',
+        }),
+      ]);
+
+      // when
+      const purchasePromises = orders.map((order) =>
+        purchaseFacade.purchaseOrder({
+          userId: 1,
+          orderId: order.orderId,
+        }),
+      );
+
+      const results = await Promise.all(purchasePromises);
+
+      // then
+      // 두 개의 결제 요청이 모두 성공했는지 확인
+      expect(results).toHaveLength(2);
+
+      // 포인트가 정확히 차감되었는지 확인
+      const finalPoint = await pointService.getPointByUser(1);
+      expect(finalPoint).toBe(0);
+
+      // 재고가 정확히 차감되었는지 확인
+      const productOption = await productService.getProductOption(1);
+      expect(productOption.stock).toBe(8);
+
+      // 주문 상태가 모두 완료인지 확인
+      const orderStatuses = await Promise.all(
+        orders.map((order) => orderService.getOrder(order.orderId)),
+      );
+      orderStatuses.forEach((order) => {
+        expect(order.status).toBe(OrderStatus.COMPLETED);
+      });
+    });
+
+    it('분산락 획득 실패 시 결제에 실패한다', async () => {
+      // given
+      const order = await orderService.makeOrder({
+        userId: 1,
+        optionId: 1,
+        quantity: 1,
+        address: '서울시 강남구',
+      });
+
+      // 첫 번째 락 획득
+      const firstLock = await userLock.acquireUserLock(1);
+      expect(firstLock).toBeDefined();
+
+      // when & then
+      await expect(
+        purchaseFacade.purchaseOrder({
+          userId: 1,
+          orderId: order.orderId,
+        }),
+      ).rejects.toThrow('유저가 다른 작업을 진행중입니다');
+
+      // 락 해제
+      await userLock.releaseUserLock(firstLock);
+    });
+
+    it('락이 해제되면 다시 결제를 시도할 수 있다', async () => {
+      // given
+      const order = await orderService.makeOrder({
+        userId: 1,
+        optionId: 1,
+        quantity: 1,
+        address: '서울시 강남구',
+      });
+
+      // 첫 번째 락 획득
+      const lock = await userLock.acquireUserLock(1);
+
+      // when
+      const purchasePromise = purchaseFacade.purchaseOrder({
+        userId: 1,
+        orderId: order.orderId,
+      });
+
+      // then
+      await expect(purchasePromise).rejects.toThrow(
+        '유저가 다른 작업을 진행중입니다',
+      );
+
+      // 락 해제 후 재시도
+      await userLock.releaseUserLock(lock);
+      const result = await purchaseFacade.purchaseOrder({
+        userId: 1,
+        orderId: order.orderId,
+      });
+
+      expect(result).toBeDefined();
+      const finalPoint = await pointService.getPointByUser(1);
+      expect(finalPoint).toBe(0);
+    });
   });
 });

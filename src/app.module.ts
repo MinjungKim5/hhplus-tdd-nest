@@ -7,6 +7,8 @@ import { PointModule } from './point/point.module';
 import { CouponModule } from './coupon/coupon.module';
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
+import { UserModule } from './user/user.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { OrderModule } from './order/order.module';
     CouponModule,
     ProductModule,
     OrderModule,
+    RedisModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

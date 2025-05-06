@@ -1,25 +1,26 @@
-import { Injectable } from "@nestjs/common";
-import { RedisService } from "src/redis/redis.service";
-import {Lock} from "redlock"
+import { Injectable } from '@nestjs/common';
+import { RedisLock } from 'src/redis/redis.lock';
+import { Lock } from 'redlock';
 @Injectable()
 export class UserLock {
-  constructor(private readonly redisService: RedisService) {}
+  constructor(private readonly redisService: RedisLock) {}
 
   async acquireUserLock(userId: number): Promise<Lock> {
-    const ttl = 1000;
-    const maxRetries = 3;
+    const ttl = 3000;
     const lockKey = `user:${userId}:lock`;
-    let retries = 0;
+    let retries = 2;
 
-    while (retries < maxRetries) {
+    while (retries > 0) {
       const lock = await this.redisService.acquireLock(lockKey, ttl);
       if (lock) {
         return lock;
       }
 
-      retries++;
-      if (retries >= maxRetries) {
-        throw new Error('유저가 다른 작업을 진행중입니다. 잠시 후 다시 시도해주세요.');
+      retries--;
+      if (retries === 0) {
+        throw new Error(
+          '유저가 다른 작업을 진행중입니다. 잠시 후 다시 시도해주세요.',
+        );
       }
 
       // 재시도 전 대기
@@ -29,6 +30,7 @@ export class UserLock {
   }
 
   async releaseUserLock(lock: Lock): Promise<void> {
+    if (!lock) return;
     await this.redisService.releaseLock(lock);
   }
 }
