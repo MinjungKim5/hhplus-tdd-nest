@@ -6,8 +6,9 @@ import { OrderModule } from 'src/order/order.module';
 import { PointModule } from 'src/point/point.module';
 import { ProductModule } from 'src/product/product.module';
 import { CouponModule } from 'src/coupon/coupon.module';
+import { UserModule } from 'src/user/user.module';
 @Module({
-  imports: [ProductModule, PointModule, OrderModule, CouponModule],
+  imports: [ProductModule, PointModule, OrderModule, CouponModule, UserModule],
   controllers: [PurchaseController],
   providers: [PurchaseService, { provide: PurchaseRepositoryToken, useClass: PurchaseRepository }],
 })

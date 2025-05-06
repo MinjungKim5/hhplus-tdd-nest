@@ -7,9 +7,20 @@ import { PointModule } from './point/point.module';
 import { CouponModule } from './coupon/coupon.module';
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
+import { UserModule } from './user/user.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    PointModule,
+    CouponModule,
+    ProductModule,
+    OrderModule,
+    RedisModule,
+    UserModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

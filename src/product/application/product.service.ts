@@ -46,17 +46,15 @@ export class ProductService {
     optionId: number,
     quantity: number,
   ): Promise<void> {
+    // 비관적 락을 사용하여 옵션 데이터를 가져옴
     const productOption =
-      await ctx.productRepository.getProductOption(optionId);
+      await ctx.productRepository.getProductOptionForUpdate(optionId);
+
     const newStock = productOption.stock - quantity;
     if (newStock < 0) {
       throw new Error('재고가 부족합니다.');
     }
-    await ctx.productRepository.decrementOptionStock(
-      optionId,
-      quantity,
-      productOption.version,
-    );
+    await ctx.productRepository.decrementOptionStock(optionId, quantity);
     return;
   }
 

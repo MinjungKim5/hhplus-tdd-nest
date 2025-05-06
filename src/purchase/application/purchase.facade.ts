@@ -8,6 +8,7 @@ import { CouponService } from 'src/coupon/application/coupon.service';
 import { OrderStatus } from 'src/order/domain/order';
 import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
 import { Inject } from '@nestjs/common';
+import { UserLock } from 'src/user/infrastructure/user.lock';
 export class PurchaseFacade {
   constructor(
     private readonly unitOfWork: PrismaUnitOfWork,
@@ -15,11 +16,13 @@ export class PurchaseFacade {
     private readonly pointService: PointService,
     private readonly productService: ProductService,
     private readonly couponService: CouponService,
+    private readonly userLock: UserLock,
   ) {}
 
   async purchaseOrder(dto: PurchaseReqDto) {
+    //포인트 차감을 위한 락 획득
+    const lock = await this.userLock.acquireUserLock(dto.userId);
     let retries = 3;
-
     while (retries > 0) {
       try {
         return await this.unitOfWork.runInTransaction(async (ctx) => {
@@ -38,13 +41,6 @@ export class PurchaseFacade {
               dto.couponIssueId,
             );
           }
-
-          // 포인트 차감
-          await this.pointService.usePointWithTransaction(
-            ctx,
-            dto.userId,
-            finalPrice,
-          );
 
           // 쿠폰 사용
           if (dto.couponIssueId) {
@@ -75,11 +71,16 @@ export class PurchaseFacade {
             OrderStatus.COMPLETED,
           );
 
-          return await ctx.purchaseRepository.createPurchase({
+          const purchase = await ctx.purchaseRepository.createPurchase({
             ...dto,
             finalPrice,
             status: '결제',
           });
+
+          // 포인트 차감
+          await this.pointService.usePoint(dto.userId, finalPrice);
+
+          return purchase;
         });
       } catch (error) {
         // 재시도하면 안 되는 에러들
@@ -100,6 +101,11 @@ export class PurchaseFacade {
 
         // 재시도 전 잠시 대기
         await new Promise((resolve) => setTimeout(resolve, 10));
+      } finally {
+        // 락 해제
+        if (lock) {
+          await this.userLock.releaseUserLock(lock);
+        }
       }
     }
   }

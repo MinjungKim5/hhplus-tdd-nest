@@ -18,5 +18,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document); // '/api' 경로에서 Swagger 문서 제공
 
   await app.listen(3000);
+
+  console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

@@ -3,16 +3,24 @@ import { PointService } from '../../src/point/application/point.service';
 import { IPointRepository } from '../../src/point/domain/point.repository';
 import { PointRepositoryToken } from '../../src/point/infrastructure/point.repository.impl';
 import { TransactionType } from '../../src/point/domain/point';
+import { UserLock } from '../../src/user/infrastructure/user.lock';
+import { Lock } from 'redlock';
 
 describe('PointService', () => {
   let service: PointService;
   let pointRepository: jest.Mocked<IPointRepository>;
+  let userLock: jest.Mocked<UserLock>;
 
   const mockPointRepository = {
     getPointByUser: jest.fn(),
     getPointHistory: jest.fn(),
     updatePointBalance: jest.fn(),
     createPointHistory: jest.fn(),
+  };
+
+  const mockUserLock = {
+    acquireUserLock: jest.fn(),
+    releaseUserLock: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -23,11 +31,20 @@ describe('PointService', () => {
           provide: PointRepositoryToken,
           useValue: mockPointRepository,
         },
+        {
+          provide: UserLock,
+          useValue: mockUserLock,
+        },
       ],
     }).compile();
 
     service = module.get<PointService>(PointService);
     pointRepository = module.get(PointRepositoryToken);
+    userLock = module.get(UserLock);
+
+    // Mock lock object
+    const mockLock = { release: jest.fn() } as unknown as Lock;
+    userLock.acquireUserLock.mockResolvedValue(mockLock);
   });
 
   afterEach(() => {
@@ -99,8 +116,14 @@ describe('PointService', () => {
       const result = await service.chargePoint(1, 1000);
 
       expect(result).toEqual({ point: 10000 });
+      expect(userLock.acquireUserLock).toHaveBeenCalledWith(1);
+      expect(userLock.releaseUserLock).toHaveBeenCalled();
       expect(pointRepository.getPointByUser).toHaveBeenCalledWith(1);
-      expect(pointRepository.updatePointBalance).toHaveBeenCalledWith(1, 10000);
+      expect(pointRepository.updatePointBalance).toHaveBeenCalledWith(
+        1,
+        9000,
+        10000,
+      );
       expect(pointRepository.createPointHistory).toHaveBeenCalledWith({
         userId: 1,
         amount: 1000,
@@ -115,6 +138,16 @@ describe('PointService', () => {
         '최대 잔액 한도를 초과했습니다.',
       );
     });
+
+    it('락 획득 실패시 오류가 발생한다.', async () => {
+      userLock.acquireUserLock.mockRejectedValue(
+        new Error('유저가 다른 작업을 진행중입니다.'),
+      );
+
+      await expect(service.chargePoint(1, 1000)).rejects.toThrow(
+        '유저가 다른 작업을 진행중입니다.',
+      );
+    });
   });
 
   describe('usePoint', () => {
@@ -127,7 +160,11 @@ describe('PointService', () => {
 
       expect(result).toEqual({ point: 500 });
       expect(pointRepository.getPointByUser).toHaveBeenCalledWith(1);
-      expect(pointRepository.updatePointBalance).toHaveBeenCalledWith(1, 500);
+      expect(pointRepository.updatePointBalance).toHaveBeenCalledWith(
+        1,
+        1000,
+        500,
+      );
       expect(pointRepository.createPointHistory).toHaveBeenCalledWith({
         userId: 1,
         amount: 500,

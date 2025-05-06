@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: hhplus-nest-api
+    build:
+      context: ..
+      target: prod # 프로덕션 빌드 타겟 사용
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - NODE_ENV=production
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: node dist/main.js # 컴파일된 코드 실행
+    restart: always # 서버 다운시 자동 재시작
+
+  mysql:
+    image: mysql:8.0
+    container_name: hhplus-mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql-prod-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-p${MYSQL_ROOT_PASSWORD}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  redis:
+    image: redis:latest
+    container_name: hhplus-redis-prod
+    volumes:
+      - redis-prod-data:/data
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+volumes:
+  mysql-prod-data:
+    driver: local
+  redis-prod-data:
+    driver: local
+
+networks:
+  default:
+    name: hhplus-network-prod

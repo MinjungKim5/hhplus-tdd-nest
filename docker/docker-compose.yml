@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: hhplus-nest-api
+    build:
+      context: ..
+      target: dev
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    user: 'node:node'
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=mysql://root:asdfqwer@mysql:3306/hhplus
+      - REDIS_HOST=redis
+      - NODE_ENV=development
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      sh -c "
+        pnpm install &&
+        pnpm prisma generate &&
+        pnpm start:dev
+      "
+
+  mysql:
+    image: mysql:8.0
+    container_name: hhplus-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: asdfqwer
+      MYSQL_DATABASE: hhplus
+      MYSQL_USER: user
+      MYSQL_PASSWORD: asdfqwer
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-pasdfqwer',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:latest
+    container_name: hhplus-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    restart: always
+
+volumes:
+  mysql-data:
+  redis-data:
+  prisma-data:
+  pnpm-store:
+
+networks:
+  default:
+    name: hhplus-network
