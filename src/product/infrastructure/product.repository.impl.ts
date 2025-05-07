@@ -15,15 +15,22 @@ export class ProductRepository implements IProductRepository {
   }
 
   async getBestSellingProducts(): Promise<Product[]> {
-    const products = await this.prisma.$queryRaw<Product[]>`
-      SELECT p.*, COALESCE(SUM(ps.sales), 0) as total_sales
+    const rawProducts = await this.prisma.$queryRaw<Product[]>`
+      SELECT p.productId, p.name, p.category, p.brand
       FROM Product p
       LEFT JOIN ProductStat ps ON p.productId = ps.productId
       WHERE ps.date >= DATE_SUB(NOW(), INTERVAL 3 DAY)
       GROUP BY p.productId
-      ORDER BY total_sales DESC
+      ORDER BY COALESCE(SUM(ps.sales), 0) DESC
     `;
-    return products;
+
+    // 반환값을 Product 도메인에 맞게 매핑
+    return rawProducts.map((product) => ({
+      productId: product.productId,
+      name: product.name,
+      category: product.category,
+      brand: product.brand,
+    }));
   }
 
   async getProductDetail(productId: number): Promise<ProductOption[]> {
