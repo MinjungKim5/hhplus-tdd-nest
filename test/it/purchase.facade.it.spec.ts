@@ -20,6 +20,7 @@ import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
 import { RedisLock } from 'src/redis/redis.lock';
 import { UserLock } from 'src/user/infrastructure/user.lock';
 import Redis from 'ioredis';
+import { RedisCache } from 'src/redis/redis.cache';
 
 describe('PurchaseFacade Integration Tests', () => {
   let prisma: any;
@@ -30,14 +31,17 @@ describe('PurchaseFacade Integration Tests', () => {
   let couponService: CouponService;
   let unitOfWork: PrismaUnitOfWork;
   let redisClient: Redis;
+  let cacheManager: any;
   let redisLock: RedisLock;
   let userLock: UserLock;
+  let redisCache: RedisCache;
 
   beforeAll(async () => {
     prisma = getPrismaClient();
-
     try {
-      redisClient = await setupRedis(); // 한 번만 초기화
+      const redis = await setupRedis();
+      redisClient = redis.redisClient;
+      cacheManager = redis.cacheManager;
     } catch (error) {
       console.error('Error setting up Redis:', error);
       throw error;
@@ -46,6 +50,7 @@ describe('PurchaseFacade Integration Tests', () => {
     // Redis 서비스 인스턴스 생성
     redisLock = new RedisLock(redisClient);
     userLock = new UserLock(redisLock);
+    redisCache = new RedisCache(cacheManager);
 
     // 레포지토리 인스턴스 생성
     const orderRepository = new OrderRepository(prisma);
@@ -57,7 +62,7 @@ describe('PurchaseFacade Integration Tests', () => {
     // 서비스 인스턴스 생성
     orderService = new OrderService(orderRepository, productRepository);
     pointService = new PointService(pointRepository, userLock); // userLock 주입
-    productService = new ProductService(productRepository);
+    productService = new ProductService(productRepository, redisCache);
 
     // UnitOfWork 인스턴스 생성
     unitOfWork = new PrismaUnitOfWork(
