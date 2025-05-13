@@ -7,9 +7,10 @@ export interface IProductRepository {
   getProductOption(optionId: number): Promise<ProductOption>;
   getProductOptionForUpdate(optionId: number): Promise<ProductOption>;
   getOptionStock(optionId: number): Promise<number>;
-  decrementOptionStock(
-    optionId: number,
+  decrementOptionStock(optionId: number, quantity: number): Promise<void>;
+  addProductSales(
+    productId: number,
     quantity: number,
+    todayStart: Date,
   ): Promise<void>;
-  addProductSales(productId: number, quantity: number): Promise<void>;
 }

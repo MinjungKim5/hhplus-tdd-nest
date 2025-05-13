@@ -5,6 +5,7 @@ import { ProductRepositoryToken } from '../infrastructure/product.repository.imp
 import { IRepositoryContext } from 'src/common/unit-of-work';
 import { RedisCache } from 'src/redis/redis.cache';
 import { Cron } from '@nestjs/schedule';
+import { ProductRepositoryWithRedisToken } from '../infrastructure/product.repository.impl.redis';
 
 @Injectable()
 export class ProductService {
@@ -12,7 +13,7 @@ export class ProductService {
   private readonly CACHE_TTL = 24 * 60 * 60 - 1; // 1일 - 1초 (초 단위)
 
   constructor(
-    @Inject(ProductRepositoryToken)
+    @Inject(ProductRepositoryWithRedisToken)
     private readonly productRepository: IProductRepository,
     private readonly redisCache: RedisCache,
   ) {}
@@ -30,7 +31,7 @@ export class ProductService {
     const cachedData = await this.redisCache.get<Product[]>(
       this.BEST_SELLERS_CACHE_KEY,
     );
-    if (cachedData) {
+    if (cachedData && cachedData.length > 0) {
       return cachedData;
     }
 
@@ -65,7 +66,13 @@ export class ProductService {
   // }
 
   async addProductSales(productId: number, quantity: number): Promise<void> {
-    return await this.productRepository.addProductSales(productId, quantity);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return await this.productRepository.addProductSales(
+      productId,
+      quantity,
+      todayStart,
+    );
   }
 
   async decreaseOptionStockWithTransaction(
@@ -90,6 +97,12 @@ export class ProductService {
     productId: number,
     quantity: number,
   ): Promise<void> {
-    await ctx.productRepository.addProductSales(productId, quantity);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    await this.productRepository.addProductSales(
+      productId,
+      quantity,
+      todayStart,
+    );
   }
 }

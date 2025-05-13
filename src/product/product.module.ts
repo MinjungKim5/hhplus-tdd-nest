@@ -8,15 +8,24 @@ import {
 } from './infrastructure/product.repository.impl';
 import { ProductService } from './application/product.service';
 import { RedisCache } from 'src/redis/redis.cache';
+import {
+  ProductRepositoryWithRedis,
+  ProductRepositoryWithRedisToken,
+} from './infrastructure/product.repository.impl.redis';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [ScheduleModule.forRoot(), RedisModule],
   controllers: [ProductController],
   providers: [
     ProductService,
     {
       provide: ProductRepositoryToken,
       useClass: ProductRepository,
+    },
+    {
+      provide: ProductRepositoryWithRedisToken,
+      useClass: ProductRepositoryWithRedis,
     },
     RedisCache,
   ],
