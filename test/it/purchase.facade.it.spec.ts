@@ -21,6 +21,8 @@ import { RedisLock } from 'src/redis/redis.lock';
 import { UserLock } from 'src/user/infrastructure/user.lock';
 import Redis from 'ioredis';
 import { RedisCache } from 'src/redis/redis.cache';
+import { CouponRepositoryWithReids } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
+import { ICouponRepository } from 'src/coupon/domain/coupon.repository';
 
 describe('PurchaseFacade Integration Tests', () => {
   let prisma: any;
@@ -28,6 +30,7 @@ describe('PurchaseFacade Integration Tests', () => {
   let orderService: OrderService;
   let pointService: PointService;
   let productService: ProductService;
+  let couponRepository: ICouponRepository;
   let couponService: CouponService;
   let unitOfWork: PrismaUnitOfWork;
   let redisClient: Redis;
@@ -56,7 +59,8 @@ describe('PurchaseFacade Integration Tests', () => {
     const orderRepository = new OrderRepository(prisma);
     const productRepository = new ProductRepository(prisma);
     const pointRepository = new PointRepository(prisma);
-    const couponRepository = new CouponRepository(prisma);
+    // couponRepository = new CouponRepository(prisma);
+    couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
     const purchaseRepository = new PurchaseRepository(prisma);
 
     // 서비스 인스턴스 생성
@@ -172,6 +176,7 @@ describe('PurchaseFacade Integration Tests', () => {
       data: [
         {
           couponId: 1,
+          name: '1번 쿠폰',
           couponType: 'amount',
           benefit: 500000,
           maxDiscount: 500000,
@@ -181,10 +186,11 @@ describe('PurchaseFacade Integration Tests', () => {
       ],
     });
 
-    // 5. 쿠폰 발급 데이터 삽입
-    await prisma.couponIssue.createMany({
-      data: [{ couponIssueId: 1, couponId: 1, userId: 1, used: false }],
-    });
+    // 5. 쿠폰 발행
+    await couponRepository.publishCoupon(1, 100);
+
+    // 6. 쿠폰 발급 받기
+    await couponService.claimCoupon(1, 1);
   });
 
   it('주문 건에 대한 결제를 진행한다.', async () => {
@@ -200,7 +206,7 @@ describe('PurchaseFacade Integration Tests', () => {
     const result = await purchaseFacade.purchaseOrder({
       userId: 1,
       orderId: order.orderId,
-      couponIssueId: 1,
+      couponId: 1,
     });
 
     // then
@@ -209,7 +215,7 @@ describe('PurchaseFacade Integration Tests', () => {
     expect(userPoint).toBe(500000); // 2000000 - (2000000 - 500000(쿠폰할인))
 
     // 2. 쿠폰 사용 여부 확인
-    const couponIssue = await couponService.getCouponIssue(1);
+    const couponIssue = await couponService.getCouponIssue(1, 1);
     expect(couponIssue.used).toBe(true);
 
     // 3. 재고 차감 확인
