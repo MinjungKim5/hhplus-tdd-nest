@@ -9,9 +9,10 @@ import { UserLock } from 'src/user/infrastructure/user.lock';
 import { Product } from 'src/product/domain/product';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ProductRepositoryWithRedis } from 'src/product/infrastructure/product.repository.impl.redis';
 
 const loadTestData = (fileName: string): any[] => {
-  const filePath = path.resolve(__dirname, './', fileName);
+  const filePath = path.resolve(__dirname, '../', fileName);
   const rawData = fs.readFileSync(filePath, 'utf-8');
   return JSON.parse(rawData);
 };
@@ -19,6 +20,7 @@ const loadTestData = (fileName: string): any[] => {
 describe('ProductService Integration Tests', () => {
   let prisma: any;
   let productService: ProductService;
+  let productRepository: ProductRepository | ProductRepositoryWithRedis;
   let redisClient: Redis;
   let cacheManager: any;
   let redisLock: RedisLock;
@@ -45,7 +47,7 @@ describe('ProductService Integration Tests', () => {
     redisCache = new RedisCache(cacheManager);
 
     // 레포지토리 인스턴스 생성
-    const productRepository = new ProductRepository(prisma);
+    productRepository = new ProductRepositoryWithRedis(prisma, redisClient);
 
     // 서비스 인스턴스 생성
     productService = new ProductService(productRepository, redisCache);
@@ -64,27 +66,16 @@ describe('ProductService Integration Tests', () => {
     });
 
     // 추가적으로 ProductStat 데이터 생성
-    const productStats = products.map((product) => ({
-      productId: product.productId,
-      sales: Math.floor(Math.random() * 100) + 1, // 1에서 100까지 랜덤한 판매량
-      date,
-    }));
-
-    productStats.push({
-      productId: 1,
-      sales: 200,
-      date: new Date(date.getTime() - 24 * 60 * 60 * 1000), // date보다 하루 전 날짜로 설정
-    });
-
-    productStats.push({
-      productId: 2,
-      sales: 100,
-      date: new Date(date.getTime() - 24 * 60 * 60 * 1000), // date보다 하루 전 날짜로 설정
-    });
-
-    await prisma.productStat.createMany({
-      data: productStats,
-    });
+    for (let i = 0; i < Math.ceil(products.length / 10); i++) {
+      const product = products[i];
+      await productRepository.addProductSales(
+        product.productId,
+        Math.floor(Math.random() * 100) + 1,
+        date,
+      );
+    }
+    await productRepository.addProductSales(1, 200, date);
+    await productRepository.addProductSales(2, 100, date);
   });
 
   afterAll(async () => {
@@ -109,14 +100,14 @@ describe('ProductService Integration Tests', () => {
     it('베스트셀러 상품 목록을 조회하면 캐시에 저장된다', async () => {
       // 첫 번째 호출 - DB에서 조회
       const firstCall = await productService.getProductList('best-selling');
-      expect(firstCall).toHaveLength(1000);
+      expect(firstCall).toHaveLength(100);
       expect(firstCall[0].productId).toBe(1); // 판매량 100
       expect(firstCall[1].productId).toBe(2); // 판매량 50
 
       // 캐시 검증
       const cachedData = await redisCache.get<any[]>('best-sellers');
       expect(cachedData).toBeDefined();
-      expect(cachedData).toHaveLength(1000);
+      expect(cachedData).toHaveLength(100);
       expect(cachedData[0].productId).toBe(1);
 
       // 두 번째 호출 - 캐시에서 조회
@@ -124,15 +115,7 @@ describe('ProductService Integration Tests', () => {
       expect(secondCall).toEqual(firstCall);
 
       // 캐시 효과 검증을 위한 DB 데이터 변경
-      await prisma.productStat.update({
-        where: {
-          productId_date: {
-            productId: 2,
-            date,
-          },
-        },
-        data: { sales: 400 }, // 2번 상품의 판매량을 1번보다 높게 수정
-      });
+      await productRepository.addProductSales(2, 400, date); // 판매량 400추가가
 
       // 세 번째 호출 - 여전히 캐시의 데이터를 반환
       const thirdCall = await productService.getProductList('best-selling');
@@ -147,20 +130,12 @@ describe('ProductService Integration Tests', () => {
       await redisCache.del('best-sellers');
 
       // DB 데이터 변경
-      await prisma.productStat.update({
-        where: {
-          productId_date: {
-            productId: 2,
-            date,
-          },
-        },
-        data: { sales: 400 },
-      });
+      await productRepository.addProductSales(2, 400, date); // 판매량 400추가가
 
       // 캐시 삭제 후 호출 - DB에서 새로운 데이터 조회
       const newCall = await productService.getProductList('best-selling');
       expect(newCall[0].productId).toBe(2); // 판매량 400 이상으로 1위
-      expect(newCall[1].productId).toBe(1); // 판매량 200 이상상으로 2위
+      expect(newCall[1].productId).toBe(1); // 판매량 200 이상으로 2위
     });
   });
 
