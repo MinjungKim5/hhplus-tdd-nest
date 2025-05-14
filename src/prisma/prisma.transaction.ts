@@ -7,8 +7,11 @@ import { IPointRepository } from 'src/point/domain/point.repository';
 import { ICouponRepository } from 'src/coupon/domain/coupon.repository';
 import { IPurchaseRepository } from 'src/purchase/domain/purchase.repository';
 import { OrderRepositoryToken } from 'src/order/infrastructure/order.repository.impl';
-import { ProductRepositoryToken } from 'src/product/infrastructure/product.repository.impl';import { CouponRepositoryToken } from 'src/coupon/infrastructure/coupon.repository.impl';
+import { ProductRepositoryToken } from 'src/product/infrastructure/product.repository.impl';
+import { CouponRepositoryToken } from 'src/coupon/infrastructure/coupon.repository.impl';
 import { PurchaseRepositoryToken } from 'src/purchase/infrastructure/purchase.repository.impl';
+import { CouponRepositoryWithRedisToken } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
+import { ProductRepositoryWithRedisToken } from 'src/product/infrastructure/product.repository.impl.redis';
 
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
@@ -16,9 +19,9 @@ export class PrismaUnitOfWork implements IUnitOfWork {
     private readonly prisma: PrismaService,
     @Inject(OrderRepositoryToken)
     private readonly orderRepositoryImpl: IOrderRepository,
-    @Inject(ProductRepositoryToken)
+    @Inject(ProductRepositoryWithRedisToken)
     private readonly productRepositoryImpl: IProductRepository,
-    @Inject(CouponRepositoryToken)
+    @Inject(CouponRepositoryWithRedisToken)
     private readonly couponRepositoryImpl: ICouponRepository,
     @Inject(PurchaseRepositoryToken)
     private readonly purchaseRepositoryImpl: IPurchaseRepository,

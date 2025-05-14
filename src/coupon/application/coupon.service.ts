@@ -5,9 +5,10 @@ import { CouponIssueResult } from './coupon.application.dto';
 import { ICouponRepository } from '../domain/coupon.repository';
 import { IRepositoryContext } from 'src/common/unit-of-work';
 import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { CouponRepositoryWithRedisToken } from '../infrastructure/coupon.repository.impl.redis';
 export class CouponService {
   constructor(
-    @Inject(CouponRepositoryToken)
+    @Inject(CouponRepositoryWithRedisToken)
     private readonly couponRepository: ICouponRepository,
     private readonly unitOfWork: PrismaUnitOfWork,
   ) {}
@@ -31,58 +32,65 @@ export class CouponService {
     }));
   }
 
-  async getCouponIssue(couponIssueId: number): Promise<CouponIssue> {
-    const couponIssue =
-      await this.couponRepository.getCouponIssue(couponIssueId);
+  async getCouponIssue(userId: number, couponId: number): Promise<CouponIssue> {
+    const couponIssue = await this.couponRepository.getCouponIssue(
+      userId,
+      couponId,
+    );
     return couponIssue;
   }
 
   async claimCoupon(
-    couponId: number,
     userId: number,
+    couponId: number,
   ): Promise<CouponIssueResult> {
-    return this.unitOfWork.runInTransaction((ctx) =>
-      this.claimCouponWithTransaction(ctx, couponId, userId),
-    );
+    return await this.claimCouponWithTransaction(userId, couponId);
   }
 
   async claimCouponWithTransaction(
-    ctx: IRepositoryContext,
-    couponId: number,
     userId: number,
+    couponId: number,
   ): Promise<CouponIssueResult> {
-    const { issued, limit } =
-      await ctx.couponRepository.getIssueCountAndLimit(couponId);
-    if (issued >= limit) {
-      throw new Error('쿠폰 발급에 실패했습니다. 선착순 마감되었습니다.');
-    }
+    return this.unitOfWork.runInTransaction(async (ctx) => {
+      const { issued, limit } =
+        await ctx.couponRepository.getIssueCountAndLimit(couponId);
+      if (issued >= limit) {
+        throw new Error('쿠폰 발급에 실패했습니다. 선착순 마감되었습니다.');
+      }
 
-    const couponIssue = await ctx.couponRepository.createCouponIssue(
-      couponId,
+      const couponIssue = await ctx.couponRepository.createCouponIssue(
+        userId,
+        couponId,
+      );
+
+      await ctx.couponRepository.addIssueCount(couponId, issued);
+
+      return {
+        couponId: couponIssue.couponId,
+        couponType: couponIssue.couponType,
+        benefit: couponIssue.benefit,
+        maxDiscount: couponIssue.maxDiscount,
+        minPrice: couponIssue.minPrice,
+        dueDate: couponIssue.dueDate,
+        used: couponIssue.used,
+        createdAt: couponIssue.createdAt,
+      };
+    });
+  }
+
+  async useCoupon(userId: number, couponId: number): Promise<void> {
+    await this.couponRepository.updateCouponIssueUsed(userId, couponId);
+  }
+
+  async applyCoupon(
+    price: number,
+    userId: number,
+    couponId: number,
+  ): Promise<number> {
+    const couponIssue = await this.couponRepository.getCouponIssue(
       userId,
+      couponId,
     );
-
-    await ctx.couponRepository.addIssueCount(couponId, issued);
-
-    return {
-      couponId: couponIssue.couponId,
-      couponType: couponIssue.couponType,
-      benefit: couponIssue.benefit,
-      maxDiscount: couponIssue.maxDiscount,
-      minPrice: couponIssue.minPrice,
-      dueDate: couponIssue.dueDate,
-      used: couponIssue.used,
-      createdAt: couponIssue.createdAt,
-    };
-  }
-
-  async useCoupon(couponIssueId: number): Promise<void> {
-    await this.couponRepository.updateCouponIssueUsed(couponIssueId);
-  }
-
-  async applyCoupon(price: number, couponIssueId: number): Promise<number> {
-    const couponIssue =
-      await this.couponRepository.getCouponIssue(couponIssueId);
     if (couponIssue.used === true) {
       throw new Error('이미 사용된 쿠폰입니다.');
     }
@@ -105,10 +113,13 @@ export class CouponService {
   async applyCouponWithTransaction(
     ctx: IRepositoryContext,
     price: number,
-    couponIssueId: number,
+    userId: number,
+    couponId: number,
   ): Promise<number> {
-    const couponIssue =
-      await ctx.couponRepository.getCouponIssue(couponIssueId);
+    const couponIssue = await ctx.couponRepository.getCouponIssue(
+      userId,
+      couponId,
+    );
     if (couponIssue.used) throw new Error('이미 사용된 쿠폰입니다.');
     if (couponIssue.dueDate < new Date())
       throw new Error('쿠폰이 만료되었습니다.');
@@ -120,9 +131,10 @@ export class CouponService {
 
   async useCouponWithTransaction(
     ctx: IRepositoryContext,
-    couponIssueId: number,
+    userId: number,
+    couponId: number,
   ): Promise<void> {
-    await ctx.couponRepository.updateCouponIssueUsed(couponIssueId);
+    await ctx.couponRepository.updateCouponIssueUsed(userId, couponId);
   }
 
   private calculateDiscount(price: number, couponIssue: CouponIssue): number {

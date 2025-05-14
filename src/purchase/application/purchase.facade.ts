@@ -34,19 +34,21 @@ export class PurchaseFacade {
 
           // 쿠폰 조회 및 할인 계산
           let finalPrice = order.originalPrice;
-          if (dto.couponIssueId) {
+          if (dto.couponId) {
             finalPrice = await this.couponService.applyCouponWithTransaction(
               ctx,
               finalPrice,
-              dto.couponIssueId,
+              dto.userId,
+              dto.couponId,
             );
           }
 
           // 쿠폰 사용
-          if (dto.couponIssueId) {
+          if (dto.couponId) {
             await this.couponService.useCouponWithTransaction(
               ctx,
-              dto.couponIssueId,
+              dto.userId,
+              dto.couponId,
             );
           }
 

@@ -9,6 +9,20 @@ export const CouponRepositoryToken = 'CouponRepositoryToken';
 export class CouponRepository implements ICouponRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // 쿠폰 발행량: limit, 발급량: issued
+  // 쿠폰은 발행량까지 사용자에게 발급 가능
+
+  // 원하는 갯수만큼 선착순 쿠폰 발행
+  async publishCoupon(couponId: number, limit: number): Promise<void> {
+    await this.prisma.couponLimit.create({
+      data: {
+        couponId: couponId,
+        limit: limit,
+        issued: 0,
+      },
+    });
+  }
+
   async getCouponList(): Promise<Coupon[]> {
     const result = await this.prisma.$queryRawUnsafe<Coupon[]>(`
       SELECT c.*
@@ -36,11 +50,14 @@ export class CouponRepository implements ICouponRepository {
     );
   }
 
-  async getCouponIssue(couponIssueId: number): Promise<CouponIssue> {
+  async getCouponIssue(userId: number, couponId: number): Promise<CouponIssue> {
     try {
       const result = await this.prisma.couponIssue.findUniqueOrThrow({
         where: {
-          couponIssueId: couponIssueId,
+          userId_couponId: {
+            userId: userId,
+            couponId: couponId,
+          },
         },
         include: {
           coupon: true,
@@ -54,8 +71,8 @@ export class CouponRepository implements ICouponRepository {
   }
 
   async createCouponIssue(
-    couponId: number,
     userId: number,
+    couponId: number,
   ): Promise<CouponIssue> {
     try {
       const result = await this.prisma.couponIssue.create({
@@ -70,11 +87,14 @@ export class CouponRepository implements ICouponRepository {
     }
   }
 
-  async updateCouponIssueUsed(couponIssueId: number): Promise<void> {
+  async updateCouponIssueUsed(userId: number, couponId: number): Promise<void> {
     try {
       await this.prisma.couponIssue.update({
         where: {
-          couponIssueId: couponIssueId,
+          userId_couponId: {
+            userId,
+            couponId,
+          },
           used: false,
         },
         data: {

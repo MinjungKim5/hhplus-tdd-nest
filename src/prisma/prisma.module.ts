@@ -21,9 +21,19 @@ import {
   PurchaseRepository,
   PurchaseRepositoryToken,
 } from '../purchase/infrastructure/purchase.repository.impl';
+import {
+  ProductRepositoryWithRedis,
+  ProductRepositoryWithRedisToken,
+} from 'src/product/infrastructure/product.repository.impl.redis';
+import {
+  CouponRepositoryWithRedisToken,
+  CouponRepositoryWithReids,
+} from 'src/coupon/infrastructure/coupon.repository.impl.redis';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Global()
 @Module({
+  imports: [RedisModule],
   providers: [
     PrismaService,
     PrismaUnitOfWork,
@@ -36,12 +46,20 @@ import {
       useClass: ProductRepository,
     },
     {
+      provide: ProductRepositoryWithRedisToken,
+      useClass: ProductRepositoryWithRedis,
+    },
+    {
       provide: PointRepositoryToken,
       useClass: PointRepository,
     },
     {
       provide: CouponRepositoryToken,
       useClass: CouponRepository,
+    },
+    {
+      provide: CouponRepositoryWithRedisToken,
+      useClass: CouponRepositoryWithReids,
     },
     {
       provide: PurchaseRepositoryToken,
@@ -53,8 +71,10 @@ import {
     PrismaUnitOfWork,
     OrderRepositoryToken,
     ProductRepositoryToken,
+    ProductRepositoryWithRedisToken,
     PointRepositoryToken,
     CouponRepositoryToken,
+    CouponRepositoryWithRedisToken,
     PurchaseRepositoryToken,
   ],
 })

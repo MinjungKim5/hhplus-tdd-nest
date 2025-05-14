@@ -54,11 +54,13 @@ model ProductOption {
 
 model Coupon {
   couponId     Int     @id @default(autoincrement())
+  name         String
   couponType   String
   benefit      Int
   maxDiscount  Int
   minPrice     Int
   dueDate      DateTime
+
   couponIssues CouponIssue[]
 }
 
@@ -74,7 +76,8 @@ model CouponIssue {
   coupon Coupon @relation(fields: [couponId], references: [couponId])
   user   User   @relation(fields: [userId], references: [userId])
 
-  @@unique([couponId, userId])
+  @@unique([userId, couponId])
+  @@index([userId, couponId], name: "userId_couponId")
 }
 
 model CouponLimit {
@@ -113,5 +116,5 @@ model Purchase {
 
   userId        Int
   orderId       Int
-  couponIssueId Int?
+  couponId Int?
 }

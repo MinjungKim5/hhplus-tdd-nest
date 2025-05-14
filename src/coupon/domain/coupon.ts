@@ -1,5 +1,6 @@
 export class Coupon {
   couponId: number;
+  name: string;
   couponType: string;
   benefit: number;
   maxDiscount: number;
@@ -8,7 +9,6 @@ export class Coupon {
 }
 
 export class CouponIssue extends Coupon {
-  couponIssueId: number;
   userId: number;
   createdAt: Date;
   used: boolean;

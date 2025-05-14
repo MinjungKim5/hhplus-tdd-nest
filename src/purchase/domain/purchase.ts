@@ -2,7 +2,7 @@ export class Purchase {
   id: number;
   userId: number;
   orderId: number;
-  couponIssueId?: number;
+  couponId?: number;
   finalPrice: number;
   status: string;
   createdAt: Date;
@@ -12,7 +12,7 @@ export class Purchase {
     id: number,
     userId: number,
     orderId: number,
-    couponIssueId: number | undefined,
+    couponId: number | undefined,
     finalPrice: number,
     status: string,
     createdAt: Date,
@@ -21,7 +21,7 @@ export class Purchase {
     this.id = id;
     this.userId = userId;
     this.orderId = orderId;
-    this.couponIssueId = couponIssueId;
+    this.couponId = couponId;
     this.finalPrice = finalPrice;
     this.status = status;
     this.createdAt = createdAt;
@@ -32,7 +32,7 @@ export class Purchase {
 export class CreatePurchaseDto {
   userId: number;
   orderId: number;
-  couponIssueId?: number;
+  couponId?: number;
   finalPrice: number;
   status: string;
 }
