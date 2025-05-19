@@ -17,5 +17,5 @@ export class PurchaseReqDto {
   orderId: number = 1;
   @ApiProperty()
   @IsPositive()
-  couponIssueId?: number = 1;
+  couponId?: number = 1;
 }

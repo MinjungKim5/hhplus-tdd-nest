@@ -6,9 +6,7 @@ import { CouponService } from '../application/coupon.service';
 
 @Controller('/coupon')
 export class CouponController {
-  constructor(
-    private readonly couponService: CouponService,
-  ) {}
+  constructor(private readonly couponService: CouponService) {}
 
   @Get('')
   @ApiOperation({ summary: '발급가능한 쿠폰 목록 조회' })
@@ -28,6 +26,6 @@ export class CouponController {
   @Post('/claim')
   @ApiOperation({ summary: '쿠폰 발급 요청' })
   async claimCoupon(@Body() dto: ClaimCouponResDto) {
-    return this.couponService.claimCoupon(dto.couponId, dto.userId);
+    return this.couponService.claimCoupon(dto.userId, dto.couponId);
   }
 }
