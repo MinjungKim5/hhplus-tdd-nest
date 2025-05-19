@@ -10,7 +10,7 @@ import { PurchaseCompletedEvent } from 'src/purchase/application/purchase.facade
 import { OnEventSafe } from 'src/util/event/event.emitter';
 
 @Injectable()
-export class ProductService {
+export class PProductService {
   private readonly BEST_SELLERS_CACHE_KEY = 'best-sellers';
   private readonly CACHE_TTL = 24 * 60 * 60 - 1; // 1일 - 1초 (초 단위)
 
@@ -92,25 +92,5 @@ export class ProductService {
     }
     await ctx.productRepository.decrementOptionStock(optionId, quantity);
     return;
-  }
-
-  async addProductSalesWithTransaction(
-    ctx: IRepositoryContext,
-    productId: number,
-    quantity: number,
-  ): Promise<void> {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    await this.productRepository.addProductSales(
-      productId,
-      quantity,
-      todayStart,
-    );
-  }
-
-  @OnEventSafe('purchase.committed')
-  async handlePurchaseEvent(event: PurchaseCompletedEvent): Promise<void> {
-    const { productId, quantity } = event;
-    await this.addProductSales(productId, quantity);
   }
 }

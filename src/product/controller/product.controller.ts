@@ -23,6 +23,10 @@ export class ProductController {
   async getProductDetail(
     @Param() params: GetProductParamDto,
   ): Promise<ProductOptionResDto[]> {
-    return this.productService.getProductDetail(params.productId);
+    return this.productService.getProductDetail(
+      typeof params.productId === 'string'
+        ? parseInt(params.productId)
+        : params.productId,
+    );
   }
 }

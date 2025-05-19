@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-
 import { ProductController } from './controller/product.controller';
 import {
   ProductRepository,
@@ -13,12 +11,15 @@ import {
   ProductRepositoryWithRedisToken,
 } from './infrastructure/product.repository.impl.redis';
 import { RedisModule } from 'src/util/redis/redis.module';
+import { PProductService } from './application/product.service2';
 
+// @Global()
 @Module({
-  imports: [ScheduleModule.forRoot(), RedisModule],
+  imports: [RedisModule],
   controllers: [ProductController],
   providers: [
     ProductService,
+    PProductService,
     {
       provide: ProductRepositoryToken,
       useClass: ProductRepository,
@@ -27,8 +28,12 @@ import { RedisModule } from 'src/util/redis/redis.module';
       provide: ProductRepositoryWithRedisToken,
       useClass: ProductRepositoryWithRedis,
     },
-    RedisCache,
   ],
-  exports: [ProductService],
+  exports: [
+    ProductService,
+    PProductService,
+    ProductRepositoryToken,
+    ProductRepositoryWithRedisToken,
+  ],
 })
 export class ProductModule {}

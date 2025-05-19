@@ -3,9 +3,7 @@ import { IsIn, IsOptional, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetProductParamDto {
-  @Type(() => Number)
-  @IsPositive()
-  productId: number;
+  productId: number | string;
 }
 
 export class SortDto {

@@ -25,5 +25,6 @@ import {
       useClass: CouponRepositoryWithReids,
     },
   ],
+  exports: [CouponService],
 })
 export class CouponModule {}

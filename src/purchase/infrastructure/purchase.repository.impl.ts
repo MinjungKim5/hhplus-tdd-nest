@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IPurchaseRepository } from '../domain/purchase.repository';
 import { CreatePurchaseDto, Purchase } from '../domain/purchase';
 import { PrismaService } from 'src/util/prisma/prisma.service';
+
 export const PurchaseRepositoryToken = 'PurchaseRepositoryToken';
 
 @Injectable()

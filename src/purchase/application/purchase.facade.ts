@@ -2,21 +2,29 @@ import { OrderService } from 'src/order/application/order.service';
 import { PurchaseReqDto } from '../controller/purchase.dto';
 import { PurchaseService } from '../domain/purchase.service';
 import { PointService } from 'src/point/application/point.service';
-import { ProductService } from 'src/product/application/product.service';
+// import { ProductService } from 'src/product/application/product.service';
 import { IPurchaseRepository } from '../domain/purchase.repository';
 import { CouponService } from 'src/coupon/application/coupon.service';
 import { OrderStatus } from 'src/order/domain/order';
 import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { UserLock } from 'src/user/infrastructure/user.lock';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PurchaseRepositoryToken } from '../infrastructure/purchase.repository.impl';
+import { PProductService } from 'src/product/application/product.service2';
+
+@Injectable()
 export class PurchaseFacade {
   constructor(
     private readonly unitOfWork: PrismaUnitOfWork,
     private readonly orderService: OrderService,
     private readonly pointService: PointService,
-    private readonly productService: ProductService,
+    private readonly productService: PProductService,
     private readonly couponService: CouponService,
     private readonly userLock: UserLock,
+    private readonly eventEmitter: EventEmitter2,
+    @Inject(PurchaseRepositoryToken)
+    private readonly purchaseRepository: IPurchaseRepository,
   ) {}
 
   async purchaseOrder(dto: PurchaseReqDto) {
@@ -25,64 +33,64 @@ export class PurchaseFacade {
     let retries = 3;
     while (retries > 0) {
       try {
-        return await this.unitOfWork.runInTransaction(async (ctx) => {
-          // 주문 조회
-          const order = await this.orderService.getOrderWithTransaction(
-            ctx,
-            dto.orderId,
-          );
-
-          // 쿠폰 조회 및 할인 계산
-          let finalPrice = order.originalPrice;
-          if (dto.couponId) {
-            finalPrice = await this.couponService.applyCouponWithTransaction(
+        const purchaseCompleted = await this.unitOfWork.runInTransaction(
+          async (ctx) => {
+            // 주문 조회
+            const order = await this.orderService.getOrderWithTransaction(
               ctx,
+              dto.orderId,
+            );
+
+            // 쿠폰 조회 및 할인 계산
+            let finalPrice = order.originalPrice;
+            if (dto.couponId) {
+              finalPrice = await this.couponService.applyCouponWithTransaction(
+                ctx,
+                finalPrice,
+                dto.userId,
+                dto.couponId,
+              );
+            }
+
+            // 쿠폰 사용
+            if (dto.couponId) {
+              await this.couponService.useCouponWithTransaction(
+                ctx,
+                dto.userId,
+                dto.couponId,
+              );
+            }
+
+            // 재고 업데이트
+            // await this.productService.decreaseOptionStockWithTransaction(
+            //   ctx,
+            //   order.optionId,
+            //   order.quantity,
+            // );
+
+            // 포인트 차감
+            await this.pointService.usePoint(dto.userId, finalPrice);
+
+            return new PurchaseCompletedEvent(
+              dto.userId,
+              order.productId,
+              order.quantity,
+              order.orderId,
+              dto.couponId,
               finalPrice,
-              dto.userId,
-              dto.couponId,
             );
-          }
+          },
+        );
 
-          // 쿠폰 사용
-          if (dto.couponId) {
-            await this.couponService.useCouponWithTransaction(
-              ctx,
-              dto.userId,
-              dto.couponId,
-            );
-          }
+        // 트랜잭션 완료하고, 기존 판매량, 주문상태 업데이트 로직은
+        // 이벤트 발행하여 비동기로 처리.
+        // 이후 결제 정보 저장
 
-          // 재고 업데이트
-          await this.productService.decreaseOptionStockWithTransaction(
-            ctx,
-            order.optionId,
-            order.quantity,
-          );
-
-          // 판매량 업데이트
-          await this.productService.addProductSalesWithTransaction(
-            ctx,
-            order.productId,
-            order.quantity,
-          );
-
-          // 주문 상태 업데이트
-          await this.orderService.updateOrderStatusWithTransaction(
-            ctx,
-            order.orderId,
-            OrderStatus.COMPLETED,
-          );
-
-          const purchase = await ctx.purchaseRepository.createPurchase({
-            ...dto,
-            finalPrice,
-            status: '결제',
-          });
-
-          // 포인트 차감
-          await this.pointService.usePoint(dto.userId, finalPrice);
-
-          return purchase;
+        this.eventEmitter.emit('purchase.committed', purchaseCompleted);
+        return await this.purchaseRepository.createPurchase({
+          ...dto,
+          finalPrice: purchaseCompleted.finalPrice,
+          status: '결제',
         });
       } catch (error) {
         // 재시도하면 안 되는 에러들
@@ -111,4 +119,15 @@ export class PurchaseFacade {
       }
     }
   }
+}
+
+export class PurchaseCompletedEvent {
+  constructor(
+    public readonly userId: number,
+    public readonly productId: number,
+    public readonly quantity: number,
+    public readonly orderId: number,
+    public readonly couponId?: number,
+    public readonly finalPrice?: number,
+  ) {}
 }

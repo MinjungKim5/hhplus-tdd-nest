@@ -23,6 +23,7 @@ import Redis from 'ioredis';
 import { RedisCache } from 'src/util/redis/redis.cache';
 import { CouponRepositoryWithReids } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
 import { ICouponRepository } from 'src/coupon/domain/coupon.repository';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('PurchaseFacade Integration Tests', () => {
   let prisma: any;
@@ -59,8 +60,8 @@ describe('PurchaseFacade Integration Tests', () => {
     const orderRepository = new OrderRepository(prisma);
     const productRepository = new ProductRepository(prisma);
     const pointRepository = new PointRepository(prisma);
-    // couponRepository = new CouponRepository(prisma);
-    couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
+    couponRepository = new CouponRepository(prisma);
+    // couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
     const purchaseRepository = new PurchaseRepository(prisma);
 
     // 서비스 인스턴스 생성
@@ -87,6 +88,8 @@ describe('PurchaseFacade Integration Tests', () => {
       productService,
       couponService,
       userLock,
+      new EventEmitter2(),
+      purchaseRepository,
     );
   });
 

@@ -30,8 +30,8 @@ describe('CouponService Integration Tests', () => {
       throw error;
     }
     // 레포지토리 인스턴스 생성
-    // couponRepository = new CouponRepository(prisma);
-    couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
+    couponRepository = new CouponRepository(prisma);
+    // couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
     const orderRepository = new OrderRepository(prisma);
     const productRepository = new ProductRepository(prisma);
     const pointRepository = new PointRepository(prisma);

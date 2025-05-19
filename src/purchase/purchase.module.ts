@@ -10,12 +10,17 @@ import { PointModule } from 'src/point/point.module';
 import { ProductModule } from 'src/product/product.module';
 import { CouponModule } from 'src/coupon/coupon.module';
 import { UserModule } from 'src/user/user.module';
+import { PurchaseFacade } from './application/purchase.facade';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 @Module({
-  imports: [ProductModule, PointModule, OrderModule, CouponModule, UserModule],
+  imports: [OrderModule, PointModule, ProductModule, CouponModule, UserModule],
   controllers: [PurchaseController],
   providers: [
     PurchaseService,
+    PurchaseFacade,
+    PrismaUnitOfWork,
     { provide: PurchaseRepositoryToken, useClass: PurchaseRepository },
   ],
+  exports: [PurchaseService, PurchaseFacade, PurchaseRepositoryToken],
 })
 export class PurchaseModule {}

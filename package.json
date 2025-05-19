@@ -20,7 +20,8 @@
     "test:unit": "jest --config ./test/unit/unit.jest.json",
     "test:it": "jest --config ./test/it/it.jest.json --runInBand --detectOpenHandles",
     "test:e2e": "jest --config ./test/e2e/jest-e2e.json",
-    "sonar": "node report.js"
+    "sonar": "node report.js",
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",

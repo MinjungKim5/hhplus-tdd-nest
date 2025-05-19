@@ -10,6 +10,8 @@ import { OrderModule } from './order/order.module';
 import { UserModule } from './user/user.module';
 import { RedisModule } from './util/redis/redis.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { PurchaseModule } from './purchase/purchase.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     OrderModule,
     RedisModule,
     UserModule,
+    PurchaseModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
