@@ -3,7 +3,7 @@ import { Product, ProductOption } from '../domain/product';
 import { IProductRepository } from '../domain/product.repository';
 import { ProductRepositoryToken } from '../infrastructure/product.repository.impl';
 import { IRepositoryContext } from 'src/common/unit-of-work';
-import { RedisCache } from 'src/redis/redis.cache';
+import { RedisCache } from 'src/util/redis/redis.cache';
 import { Cron } from '@nestjs/schedule';
 import { ProductRepositoryWithRedisToken } from '../infrastructure/product.repository.impl.redis';
 

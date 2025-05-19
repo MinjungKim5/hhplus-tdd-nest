@@ -16,11 +16,11 @@ import { CouponRepository } from 'src/coupon/infrastructure/coupon.repository.im
 import { PurchaseRepository } from 'src/purchase/infrastructure/purchase.repository.impl';
 import { ProductService } from 'src/product/application/product.service';
 import { OrderStatus } from 'src/order/domain/order';
-import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
-import { RedisLock } from 'src/redis/redis.lock';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
+import { RedisLock } from 'src/util/redis/redis.lock';
 import { UserLock } from 'src/user/infrastructure/user.lock';
 import Redis from 'ioredis';
-import { RedisCache } from 'src/redis/redis.cache';
+import { RedisCache } from 'src/util/redis/redis.cache';
 import { CouponRepositoryWithReids } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
 import { ICouponRepository } from 'src/coupon/domain/coupon.repository';
 

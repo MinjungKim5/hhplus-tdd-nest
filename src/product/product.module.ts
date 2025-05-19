@@ -7,12 +7,12 @@ import {
   ProductRepositoryToken,
 } from './infrastructure/product.repository.impl';
 import { ProductService } from './application/product.service';
-import { RedisCache } from 'src/redis/redis.cache';
+import { RedisCache } from 'src/util/redis/redis.cache';
 import {
   ProductRepositoryWithRedis,
   ProductRepositoryWithRedisToken,
 } from './infrastructure/product.repository.impl.redis';
-import { RedisModule } from 'src/redis/redis.module';
+import { RedisModule } from 'src/util/redis/redis.module';
 
 @Module({
   imports: [ScheduleModule.forRoot(), RedisModule],

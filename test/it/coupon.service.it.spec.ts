@@ -2,7 +2,7 @@ import { getPrismaClient, cleanupDatabase } from '../prisma.util';
 import { CouponService } from '../../src/coupon/application/coupon.service';
 import { CouponRepository } from '../../src/coupon/infrastructure/coupon.repository.impl';
 import { CouponRepositoryWithReids } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
-import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { OrderRepository } from 'src/order/infrastructure/order.repository.impl';
 import { ProductRepository } from 'src/product/infrastructure/product.repository.impl';
 import { PurchaseRepository } from 'src/purchase/infrastructure/purchase.repository.impl';

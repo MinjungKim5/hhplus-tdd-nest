@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RedisLock } from 'src/redis/redis.lock';
+import { RedisLock } from 'src/util/redis/redis.lock';
 import { Lock } from 'redlock';
 @Injectable()
 export class UserLock {

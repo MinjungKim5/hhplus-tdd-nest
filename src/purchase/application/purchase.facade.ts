@@ -6,7 +6,7 @@ import { ProductService } from 'src/product/application/product.service';
 import { IPurchaseRepository } from '../domain/purchase.repository';
 import { CouponService } from 'src/coupon/application/coupon.service';
 import { OrderStatus } from 'src/order/domain/order';
-import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { Inject } from '@nestjs/common';
 import { UserLock } from 'src/user/infrastructure/user.lock';
 export class PurchaseFacade {

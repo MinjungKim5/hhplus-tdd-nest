@@ -4,23 +4,23 @@ import { PrismaUnitOfWork } from './prisma.transaction';
 import {
   OrderRepository,
   OrderRepositoryToken,
-} from '../order/infrastructure/order.repository.impl';
+} from 'src/order/infrastructure/order.repository.impl';
 import {
   ProductRepository,
   ProductRepositoryToken,
-} from '../product/infrastructure/product.repository.impl';
+} from 'src/product/infrastructure/product.repository.impl';
 import {
   PointRepository,
   PointRepositoryToken,
-} from '../point/infrastructure/point.repository.impl';
+} from 'src/point/infrastructure/point.repository.impl';
 import {
   CouponRepository,
   CouponRepositoryToken,
-} from '../coupon/infrastructure/coupon.repository.impl';
+} from 'src/coupon/infrastructure/coupon.repository.impl';
 import {
   PurchaseRepository,
   PurchaseRepositoryToken,
-} from '../purchase/infrastructure/purchase.repository.impl';
+} from 'src/purchase/infrastructure/purchase.repository.impl';
 import {
   ProductRepositoryWithRedis,
   ProductRepositoryWithRedisToken,
@@ -29,7 +29,7 @@ import {
   CouponRepositoryWithRedisToken,
   CouponRepositoryWithReids,
 } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
-import { RedisModule } from 'src/redis/redis.module';
+import { RedisModule } from 'src/util/redis/redis.module';
 
 @Global()
 @Module({
