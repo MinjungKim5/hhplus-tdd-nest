@@ -96,9 +96,11 @@ export class ProductRepository implements IProductRepository {
     return;
   }
 
-  async addProductSales(productId: number, quantity: number): Promise<void> {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+  async addProductSales(
+    productId: number,
+    quantity: number,
+    todayStart: Date,
+  ): Promise<void> {
     try {
       await this.prisma.productStat.upsert({
         where: { productId_date: { productId, date: todayStart } },

@@ -28,6 +28,6 @@ import * as redisStore from 'cache-manager-redis-store';
     RedisLock,
     RedisCache,
   ],
-  exports: [RedisLock, RedisCache, CacheModule],
+  exports: [Redis, RedisLock, RedisCache, CacheModule],
 })
 export class RedisModule {}
