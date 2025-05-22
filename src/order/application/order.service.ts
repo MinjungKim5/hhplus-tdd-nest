@@ -6,8 +6,6 @@ import { MakeOrderCommand } from './order.application.dto';
 import { ProductRepositoryToken } from 'src/product/infrastructure/product.repository.impl';
 import { IProductRepository } from 'src/product/domain/product.repository';
 import { IRepositoryContext } from 'src/common/unit-of-work';
-import { PurchaseCompletedEvent } from 'src/purchase/application/purchase.facade';
-import { OnEventSafe } from 'src/util/event/event.emitter';
 
 export class OrderService {
   constructor(
@@ -93,11 +91,5 @@ export class OrderService {
     status: OrderStatus,
   ): Promise<Order> {
     return ctx.orderRepository.updateOrderStatus(orderId, status);
-  }
-
-  @OnEventSafe('purchase.committed')
-  async handlePurchaseEvent(event: PurchaseCompletedEvent): Promise<void> {
-    const { orderId } = event;
-    await this.updateOrderStatus(orderId, OrderStatus.COMPLETED);
   }
 }

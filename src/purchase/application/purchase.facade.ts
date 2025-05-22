@@ -1,3 +1,4 @@
+import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from 'src/order/application/order.service';
 import { PurchaseReqDto } from '../controller/purchase.dto';
 import { PurchaseService } from '../domain/purchase.service';
@@ -9,9 +10,9 @@ import { OrderStatus } from 'src/order/domain/order';
 import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { Inject, Injectable } from '@nestjs/common';
 import { UserLock } from 'src/user/infrastructure/user.lock';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PurchaseRepositoryToken } from '../infrastructure/purchase.repository.impl';
 import { PProductService } from 'src/product/application/product.service2';
+import { CompletePurchaseEvent } from './purchase.event';
 
 @Injectable()
 export class PurchaseFacade {
@@ -22,13 +23,12 @@ export class PurchaseFacade {
     private readonly productService: PProductService,
     private readonly couponService: CouponService,
     private readonly userLock: UserLock,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly eventBus: EventBus,
     @Inject(PurchaseRepositoryToken)
     private readonly purchaseRepository: IPurchaseRepository,
   ) {}
 
   async purchaseOrder(dto: PurchaseReqDto) {
-    //포인트 차감을 위한 락 획득
     const lock = await this.userLock.acquireUserLock(dto.userId);
     let retries = 3;
     while (retries > 0) {
@@ -71,7 +71,7 @@ export class PurchaseFacade {
             // 포인트 차감
             await this.pointService.usePoint(dto.userId, finalPrice);
 
-            return new PurchaseCompletedEvent(
+            return new CompletePurchaseEvent(
               dto.userId,
               order.productId,
               order.quantity,
@@ -82,11 +82,7 @@ export class PurchaseFacade {
           },
         );
 
-        // 트랜잭션 완료하고, 기존 판매량, 주문상태 업데이트 로직은
-        // 이벤트 발행하여 비동기로 처리.
-        // 이후 결제 정보 저장
-
-        this.eventEmitter.emit('purchase.committed', purchaseCompleted);
+        await this.eventBus.publish(purchaseCompleted);
         return await this.purchaseRepository.createPurchase({
           ...dto,
           finalPrice: purchaseCompleted.finalPrice,
@@ -119,15 +115,4 @@ export class PurchaseFacade {
       }
     }
   }
-}
-
-export class PurchaseCompletedEvent {
-  constructor(
-    public readonly userId: number,
-    public readonly productId: number,
-    public readonly quantity: number,
-    public readonly orderId: number,
-    public readonly couponId?: number,
-    public readonly finalPrice?: number,
-  ) {}
 }

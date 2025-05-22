@@ -6,8 +6,6 @@ import { IRepositoryContext } from 'src/common/unit-of-work';
 import { RedisCache } from 'src/util/redis/redis.cache';
 import { Cron } from '@nestjs/schedule';
 import { ProductRepositoryWithRedisToken } from '../infrastructure/product.repository.impl.redis';
-import { PurchaseCompletedEvent } from 'src/purchase/application/purchase.facade';
-import { OnEventSafe } from 'src/util/event/event.emitter';
 
 @Injectable()
 export class ProductService {
@@ -106,11 +104,5 @@ export class ProductService {
       quantity,
       todayStart,
     );
-  }
-
-  @OnEventSafe('purchase.committed')
-  async handlePurchaseEvent(event: PurchaseCompletedEvent): Promise<void> {
-    const { productId, quantity } = event;
-    await this.addProductSales(productId, quantity);
   }
 }

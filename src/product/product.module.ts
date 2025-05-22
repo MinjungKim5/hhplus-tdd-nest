@@ -12,10 +12,12 @@ import {
 } from './infrastructure/product.repository.impl.redis';
 import { RedisModule } from 'src/util/redis/redis.module';
 import { PProductService } from './application/product.service2';
+import { CompletePurchaseEventHandler } from './application/product.event.handler';
+import { CqrsModule } from '@nestjs/cqrs';
 
 // @Global()
 @Module({
-  imports: [RedisModule],
+  imports: [RedisModule, CqrsModule],
   controllers: [ProductController],
   providers: [
     ProductService,
@@ -28,6 +30,7 @@ import { PProductService } from './application/product.service2';
       provide: ProductRepositoryWithRedisToken,
       useClass: ProductRepositoryWithRedis,
     },
+    CompletePurchaseEventHandler,
   ],
   exports: [
     ProductService,
