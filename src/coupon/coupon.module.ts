@@ -5,7 +5,7 @@ import {
   CouponRepositoryToken,
 } from './infrastructure/coupon.repository.impl';
 import { CouponService } from './application/coupon.service';
-import { RedisModule } from 'src/redis/redis.module';
+import { RedisModule } from 'src/util/redis/redis.module';
 import {
   CouponRepositoryWithRedisToken,
   CouponRepositoryWithReids,
@@ -25,5 +25,6 @@ import {
       useClass: CouponRepositoryWithReids,
     },
   ],
+  exports: [CouponService],
 })
 export class CouponModule {}

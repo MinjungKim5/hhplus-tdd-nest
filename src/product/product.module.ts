@@ -1,24 +1,27 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-
 import { ProductController } from './controller/product.controller';
 import {
   ProductRepository,
   ProductRepositoryToken,
 } from './infrastructure/product.repository.impl';
 import { ProductService } from './application/product.service';
-import { RedisCache } from 'src/redis/redis.cache';
+import { RedisCache } from 'src/util/redis/redis.cache';
 import {
   ProductRepositoryWithRedis,
   ProductRepositoryWithRedisToken,
 } from './infrastructure/product.repository.impl.redis';
-import { RedisModule } from 'src/redis/redis.module';
+import { RedisModule } from 'src/util/redis/redis.module';
+import { PProductService } from './application/product.service2';
+import { CompletePurchaseEventHandler } from './application/product.event.handler';
+import { CqrsModule } from '@nestjs/cqrs';
 
+// @Global()
 @Module({
-  imports: [ScheduleModule.forRoot(), RedisModule],
+  imports: [RedisModule, CqrsModule],
   controllers: [ProductController],
   providers: [
     ProductService,
+    PProductService,
     {
       provide: ProductRepositoryToken,
       useClass: ProductRepository,
@@ -27,8 +30,13 @@ import { RedisModule } from 'src/redis/redis.module';
       provide: ProductRepositoryWithRedisToken,
       useClass: ProductRepositoryWithRedis,
     },
-    RedisCache,
+    CompletePurchaseEventHandler,
   ],
-  exports: [ProductService],
+  exports: [
+    ProductService,
+    PProductService,
+    ProductRepositoryToken,
+    ProductRepositoryWithRedisToken,
+  ],
 })
 export class ProductModule {}

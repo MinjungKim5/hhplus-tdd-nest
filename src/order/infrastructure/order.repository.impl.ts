@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IOrderRepository } from '../domain/order.repository';
 import { MakeOrderDto, Order, OrderStatus } from '../domain/order';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/util/prisma/prisma.service';
 
 export const OrderRepositoryToken = 'OrderRepositoryToken';
 

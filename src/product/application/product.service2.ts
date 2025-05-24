@@ -6,9 +6,11 @@ import { IRepositoryContext } from 'src/common/unit-of-work';
 import { RedisCache } from 'src/util/redis/redis.cache';
 import { Cron } from '@nestjs/schedule';
 import { ProductRepositoryWithRedisToken } from '../infrastructure/product.repository.impl.redis';
+import { PurchaseCompletedEvent } from 'src/purchase/application/purchase.facade';
+import { OnEventSafe } from 'src/util/event/event.emitter';
 
 @Injectable()
-export class ProductService {
+export class PProductService {
   private readonly BEST_SELLERS_CACHE_KEY = 'best-sellers';
   private readonly CACHE_TTL = 24 * 60 * 60 - 1; // 1일 - 1초 (초 단위)
 
@@ -90,19 +92,5 @@ export class ProductService {
     }
     await ctx.productRepository.decrementOptionStock(optionId, quantity);
     return;
-  }
-
-  async addProductSalesWithTransaction(
-    ctx: IRepositoryContext,
-    productId: number,
-    quantity: number,
-  ): Promise<void> {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    await this.productRepository.addProductSales(
-      productId,
-      quantity,
-      todayStart,
-    );
   }
 }

@@ -1,7 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { ICouponRepository } from '../domain/coupon.repository';
 import { Coupon, CouponIssue } from '../domain/coupon';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/util/prisma/prisma.service';
 import { plainToInstance } from 'class-transformer'; // class-transformer 패키지 필요
 
 export const CouponRepositoryToken = 'CouponRepositoryToken';

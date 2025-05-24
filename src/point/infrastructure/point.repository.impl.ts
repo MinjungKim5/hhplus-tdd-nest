@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IPointRepository } from '../domain/point.repository';
 import { PointHistory, TransactionType, UserPoint } from '../domain/point';
 import { PointHistoryCriteria } from '../application/point.application.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/util/prisma/prisma.service';
 
 export const PointRepositoryToken = 'PointRepositoryToken';
 @Injectable()

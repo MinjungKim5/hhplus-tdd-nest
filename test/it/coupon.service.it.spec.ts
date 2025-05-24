@@ -2,7 +2,7 @@ import { getPrismaClient, cleanupDatabase } from '../prisma.util';
 import { CouponService } from '../../src/coupon/application/coupon.service';
 import { CouponRepository } from '../../src/coupon/infrastructure/coupon.repository.impl';
 import { CouponRepositoryWithReids } from 'src/coupon/infrastructure/coupon.repository.impl.redis';
-import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { OrderRepository } from 'src/order/infrastructure/order.repository.impl';
 import { ProductRepository } from 'src/product/infrastructure/product.repository.impl';
 import { PurchaseRepository } from 'src/purchase/infrastructure/purchase.repository.impl';
@@ -30,8 +30,8 @@ describe('CouponService Integration Tests', () => {
       throw error;
     }
     // 레포지토리 인스턴스 생성
-    // couponRepository = new CouponRepository(prisma);
-    couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
+    couponRepository = new CouponRepository(prisma);
+    // couponRepository = new CouponRepositoryWithReids(prisma, redisClient);
     const orderRepository = new OrderRepository(prisma);
     const productRepository = new ProductRepository(prisma);
     const pointRepository = new PointRepository(prisma);

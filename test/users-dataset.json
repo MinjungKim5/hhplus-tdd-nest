@@ -1,0 +1,32 @@
+[
+  {
+    "userId": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "point": 2000000
+  },
+  {
+    "userId": 2,
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "point": 500000
+  },
+  {
+    "userId": 3,
+    "name": "Alice Smith",
+    "email": "alice.smith@example.com",
+    "point": 9000000
+  },
+  {
+    "userId": 4,
+    "name": "Bob Johnson",
+    "email": "bob.johnson@example.com",
+    "point": 8000000
+  },
+  {
+    "userId": 5,
+    "name": "Charlie Brown",
+    "email": "charlie.brown@example.com",
+    "point": 7000000
+  }
+]

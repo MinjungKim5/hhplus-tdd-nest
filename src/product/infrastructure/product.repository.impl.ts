@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IProductRepository } from '../domain/product.repository';
 import { Product, ProductOption } from '../domain/product';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/util/prisma/prisma.service';
 
 export const ProductRepositoryToken = 'ProductRepositoryToken';
 

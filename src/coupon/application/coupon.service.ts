@@ -4,7 +4,7 @@ import { Coupon, CouponIssue } from '../domain/coupon';
 import { CouponIssueResult } from './coupon.application.dto';
 import { ICouponRepository } from '../domain/coupon.repository';
 import { IRepositoryContext } from 'src/common/unit-of-work';
-import { PrismaUnitOfWork } from 'src/prisma/prisma.transaction';
+import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { CouponRepositoryWithRedisToken } from '../infrastructure/coupon.repository.impl.redis';
 export class CouponService {
   constructor(

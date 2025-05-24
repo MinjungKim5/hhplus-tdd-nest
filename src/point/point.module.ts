@@ -14,5 +14,6 @@ import { UserModule } from 'src/user/user.module';
     PointService,
     { provide: PointRepositoryToken, useClass: PointRepository },
   ],
+  exports: [PointService],
 })
 export class PointModule {}
