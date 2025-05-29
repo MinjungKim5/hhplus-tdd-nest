@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ClaimCouponResDto, CouponDto, CouponIssueDto } from './coupon.dto';
-import { GetUserParamDto } from '../../user/controller/user.dto';
-import { CouponService } from '../application/coupon.service';
+import { GetUserParamDto } from '../../../user/controller/user.dto';
+import { CouponService } from '../../application/coupon.service';
 
 @Controller('/coupon')
 export class CouponController {

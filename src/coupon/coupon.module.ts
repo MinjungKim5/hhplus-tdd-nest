@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CouponController } from './controller/coupon.controller';
+import { CouponController } from './interface/controller/coupon.controller';
 import {
   CouponRepository,
   CouponRepositoryToken,
@@ -10,6 +10,7 @@ import {
   CouponRepositoryWithRedisToken,
   CouponRepositoryWithReids,
 } from './infrastructure/coupon.repository.impl.redis';
+import { ClientKafka } from '@nestjs/microservices';
 
 @Module({
   imports: [RedisModule],
@@ -23,6 +24,13 @@ import {
     {
       provide: CouponRepositoryWithRedisToken,
       useClass: CouponRepositoryWithReids,
+    },
+    {
+      provide: 'COUPON_KAFKA',
+      useFactory: (factory: (groupId: string) => ClientKafka) => {
+        return factory('coupon-group');
+      },
+      inject: ['KAFKA_CONSUMER_FACTORY'],
     },
   ],
   exports: [CouponService],
