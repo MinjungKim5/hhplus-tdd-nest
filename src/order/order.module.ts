@@ -1,21 +1,31 @@
 import { Module } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { OrderController } from './controller/order.controller';
 import { ProductModule } from 'src/product/product.module';
-import { OrderRepository } from './infrastructure/order.repository.impl';
-import { OrderRepositoryToken } from './infrastructure/order.repository.impl';
+import {
+  OrderRepository,
+  OrderRepositoryToken,
+} from './infrastructure/order.repository.impl';
 import { OrderService } from './application/order.service';
-import { CompletePurchaseEventHandler } from './application/order.event.handler';
-import { CqrsModule } from '@nestjs/cqrs';
+import { KafkaModule } from 'src/util/kafka/kafka.module';
+import { OrderKafkaConsumer } from './event/order.event.handler';
 
 @Module({
-  imports: [ProductModule, CqrsModule],
+  imports: [ProductModule, KafkaModule],
   providers: [
     {
       provide: OrderRepositoryToken,
       useClass: OrderRepository,
     },
     OrderService,
-    CompletePurchaseEventHandler,
+    {
+      provide: 'ORDER_KAFKA',
+      useFactory: (factory: (groupId: string) => ClientKafka) => {
+        return factory('order-group');
+      },
+      inject: ['KAFKA_CONSUMER_FACTORY'],
+    },
+    OrderKafkaConsumer,
   ],
   controllers: [OrderController],
   exports: [OrderService],
