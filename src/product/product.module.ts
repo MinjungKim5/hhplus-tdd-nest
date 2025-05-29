@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { ProductController } from './controller/product.controller';
 import {
   ProductRepository,
@@ -12,12 +13,12 @@ import {
 } from './infrastructure/product.repository.impl.redis';
 import { RedisModule } from 'src/util/redis/redis.module';
 import { PProductService } from './application/product.service2';
-import { CompletePurchaseEventHandler } from './application/product.event.handler';
-import { CqrsModule } from '@nestjs/cqrs';
+import { KafkaModule } from 'src/util/kafka/kafka.module';
+import { ProductKafkaConsumer } from './event/product.event.handler';
 
 // @Global()
 @Module({
-  imports: [RedisModule, CqrsModule],
+  imports: [RedisModule, KafkaModule],
   controllers: [ProductController],
   providers: [
     ProductService,
@@ -30,7 +31,14 @@ import { CqrsModule } from '@nestjs/cqrs';
       provide: ProductRepositoryWithRedisToken,
       useClass: ProductRepositoryWithRedis,
     },
-    CompletePurchaseEventHandler,
+    {
+      provide: 'PRODUCT_KAFKA',
+      useFactory: (factory: (groupId: string) => ClientKafka) => {
+        return factory('product-group');
+      },
+      inject: ['KAFKA_CONSUMER_FACTORY'],
+    },
+    ProductKafkaConsumer,
   ],
   exports: [
     ProductService,

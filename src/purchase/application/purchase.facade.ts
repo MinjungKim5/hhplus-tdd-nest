@@ -12,7 +12,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UserLock } from 'src/user/infrastructure/user.lock';
 import { PurchaseRepositoryToken } from '../infrastructure/purchase.repository.impl';
 import { PProductService } from 'src/product/application/product.service2';
-import { CompletePurchaseEvent } from './purchase.event';
+import { CompletePurchaseEvent } from '../event/purchase.event';
+import { KafkaProducerService } from 'src/util/kafka/kafka.service';
 
 @Injectable()
 export class PurchaseFacade {
@@ -23,7 +24,7 @@ export class PurchaseFacade {
     private readonly productService: PProductService,
     private readonly couponService: CouponService,
     private readonly userLock: UserLock,
-    private readonly eventBus: EventBus,
+    private readonly kafkaProducer: KafkaProducerService,
     @Inject(PurchaseRepositoryToken)
     private readonly purchaseRepository: IPurchaseRepository,
   ) {}
@@ -82,7 +83,7 @@ export class PurchaseFacade {
           },
         );
 
-        await this.eventBus.publish(purchaseCompleted);
+        await this.kafkaProducer.emit('purchase.completed', purchaseCompleted);
         return await this.purchaseRepository.createPurchase({
           ...dto,
           finalPrice: purchaseCompleted.finalPrice,

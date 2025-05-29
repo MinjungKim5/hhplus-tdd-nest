@@ -17,6 +17,9 @@ RUN pnpm install
 # 소스 코드 복사 (권한도 함께)
 COPY --chown=node:node . .
 
+# Prisma 클라이언트 생성
+RUN pnpm prisma generate
+
 USER node
 
 CMD ["pnpm", "start:dev"]
@@ -35,6 +38,8 @@ ENV NODE_ENV production
 COPY --chown=node:node --from=dev /app/node_modules ./node_modules
 COPY --chown=node:node --from=dev /app .
 
+# Prisma 클라이언트 생성
+RUN pnpm prisma generate
 RUN pnpm build
 RUN pnpm install --production && pnpm store prune
 
