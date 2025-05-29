@@ -14,10 +14,10 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
     await this.producer.disconnect();
   }
 
-  async emit(topic: string, value: any) {
+  async emit(topic: string, key: string, value: any) {
     await this.producer.send({
       topic,
-      messages: [{ value: JSON.stringify(value) }],
+      messages: [{ key, value: JSON.stringify(value) }],
     });
   }
 }

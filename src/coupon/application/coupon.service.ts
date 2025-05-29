@@ -6,11 +6,14 @@ import { ICouponRepository } from '../domain/coupon.repository';
 import { IRepositoryContext } from 'src/common/unit-of-work';
 import { PrismaUnitOfWork } from 'src/util/prisma/prisma.transaction';
 import { CouponRepositoryWithRedisToken } from '../infrastructure/coupon.repository.impl.redis';
+import { KafkaProducerService } from 'src/util/kafka/kafka.service';
+
 export class CouponService {
   constructor(
     @Inject(CouponRepositoryWithRedisToken)
     private readonly couponRepository: ICouponRepository,
     private readonly unitOfWork: PrismaUnitOfWork,
+    private readonly kafkaProducer: KafkaProducerService,
   ) {}
 
   async getCouponList(): Promise<Coupon[]> {
@@ -40,11 +43,11 @@ export class CouponService {
     return couponIssue;
   }
 
-  async claimCoupon(
-    userId: number,
-    couponId: number,
-  ): Promise<CouponIssueResult> {
-    return await this.claimCouponWithTransaction(userId, couponId);
+  async claimCoupon(userId: number, couponId: number): Promise<void> {
+    await this.kafkaProducer.emit('purchase.completed', couponId.toString(), {
+      userId,
+      couponId,
+    });
   }
 
   async claimCouponWithTransaction(

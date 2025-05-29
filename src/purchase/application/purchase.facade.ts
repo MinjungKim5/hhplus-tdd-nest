@@ -83,7 +83,11 @@ export class PurchaseFacade {
           },
         );
 
-        await this.kafkaProducer.emit('purchase.completed', purchaseCompleted);
+        await this.kafkaProducer.emit(
+          'purchase.completed',
+          dto.userId.toString(),
+          purchaseCompleted,
+        );
         return await this.purchaseRepository.createPurchase({
           ...dto,
           finalPrice: purchaseCompleted.finalPrice,
