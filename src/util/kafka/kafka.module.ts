@@ -1,23 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { KafkaProducerService } from './kafka.service';
-import { ClientKafka, ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientKafka } from '@nestjs/microservices';
 
 @Global()
 @Module({
-  imports: [
-    ClientsModule.register([
-      {
-        name: 'KAFKA_CONSUMER_FACTORY',
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            clientId: 'hhplus',
-            brokers: ['localhost:9092'],
-          },
-        },
-      },
-    ]),
-  ],
   providers: [
     KafkaProducerService,
     {
